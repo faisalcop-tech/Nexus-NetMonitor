@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#00c8ff</color>
+    <color name="colorPrimaryDark">#030c16</color>
+    <color name="colorAccent">#00ffdf</color>
+    <color name="background">#030c16</color>
+    <color name="jazz">#e31837</color>
+    <color name="warid">#7b22c2</color>
+    <color name="ufone">#ff6600</color>
+    <color name="zong">#cc0033</color>
+    <color name="telenor">#0075be</color>
+</resources>

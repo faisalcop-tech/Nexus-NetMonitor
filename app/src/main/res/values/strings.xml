@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nexus Net Monitor</string>
+    <string name="app_description">Pakistan Network Monitor by Faisal Malik</string>
+    <string name="permission_rationale">Nexus needs phone, location and network permissions to read cell tower data from all operators.</string>
+    <string name="notification_channel_name">Cell Monitoring</string>
+    <string name="notification_text">Monitoring all Pakistan networks...</string>
+</resources>

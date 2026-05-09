@@ -1,0 +1,2743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>NEXUS SIGINT — Pakistan Intelligence System</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#020a12;--panel:#04101a;--card:#061520;
+  --b:rgba(0,200,255,.2);--blue:#00c8ff;--cyan:#00ffe0;
+  --green:#28ff00;--or:#ff7200;--red:#ff1a38;--yel:#ffc800;
+  --dim:#285070;--txt:#c0e8ff;--purple:#aa44ff;
+  --jazz:#e31837;--warid:#7b22c2;--ufone:#ff6600;--zong:#cc0033;--tel:#0075be;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;
+  background-image:linear-gradient(rgba(0,200,255,.022) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,200,255,.022) 1px,transparent 1px);
+  background-size:26px 26px;display:flex;flex-direction:column;}
+
+/* ══ SPLASH ══ */
+#splash{position:fixed;inset:0;z-index:9999;background:#020a12;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .8s;}
+#splash.gone{opacity:0;pointer-events:none;}
+.spr{width:70px;height:70px;border-radius:50%;border:3px solid transparent;
+  border-top-color:var(--blue);border-right-color:var(--cyan);animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.splogo{font-family:'Orbitron';font-size:28px;font-weight:900;letter-spacing:6px;
+  background:linear-gradient(90deg,var(--blue),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:glo 2s ease-in-out infinite alternate;}
+@keyframes glo{from{filter:drop-shadow(0 0 4px rgba(0,200,255,.3))}to{filter:drop-shadow(0 0 20px rgba(0,200,255,.9))}}
+.spsub{font-family:'Share Tech Mono';font-size:8px;color:var(--dim);letter-spacing:3px;}
+.spprog{width:200px;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;}
+.spfill{height:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));animation:prg 2.5s ease forwards;}
+@keyframes prg{to{width:100%}}
+
+/* ══ HEADER ══ */
+#hdr{background:linear-gradient(135deg,#030e1a,#061828);border-bottom:1px solid var(--b);
+  padding:7px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+  box-shadow:0 2px 20px rgba(0,200,255,.1);}
+.hlogo{display:flex;align-items:center;gap:8px;}
+.hlic{width:34px;height:34px;border-radius:7px;border:1px solid var(--blue);
+  background:radial-gradient(circle at 30% 30%,#112040,#020a12);
+  box-shadow:0 0 12px rgba(0,200,255,.3);display:flex;align-items:center;justify-content:center;}
+.hlt{font-family:'Orbitron';font-size:13px;font-weight:900;letter-spacing:3px;
+  background:linear-gradient(90deg,var(--blue),var(--cyan));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hls{font-family:'Share Tech Mono';font-size:7px;color:var(--dim);letter-spacing:2px;}
+.hright{display:flex;align-items:center;gap:8px;}
+.live-pill{display:flex;align-items:center;gap:4px;background:rgba(40,255,0,.08);
+  border:1px solid rgba(40,255,0,.35);border-radius:20px;padding:2px 8px;
+  font-family:'Share Tech Mono';font-size:8px;color:var(--green);letter-spacing:1px;}
+.ld{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 7px var(--green);animation:bk 1s infinite;}
+@keyframes bk{0%,100%{opacity:1}50%{opacity:.2}}
+#srch-inp{background:rgba(0,200,255,.08);border:1px solid var(--b);border-radius:20px;
+  padding:4px 12px;color:var(--txt);font-family:'Share Tech Mono';font-size:10px;
+  width:160px;outline:none;}
+#srch-inp::placeholder{color:var(--dim);}
+.hclk{font-family:'Share Tech Mono';font-size:11px;color:var(--blue);}
+
+/* ══ TABS ══ */
+#tabs{display:flex;background:var(--panel);border-bottom:1px solid var(--b);
+  overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
+#tabs::-webkit-scrollbar{display:none;}
+.tab{flex:0 0 auto;padding:7px 11px;font-family:'Orbitron';font-size:7px;font-weight:700;letter-spacing:1px;
+  color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);background:rgba(0,200,255,.04);}
+.tab.alert-tab{color:var(--red);animation:tab-alert 1s infinite;}
+@keyframes tab-alert{0%,100%{border-bottom-color:var(--red)}50%{border-bottom-color:transparent}}
+
+/* ══ MAIN CONTENT ══ */
+#main{flex:1;overflow:hidden;position:relative;}
+.scr{display:none;height:100%;overflow-y:auto;padding:9px;scrollbar-width:thin;
+  scrollbar-color:var(--dim) transparent;}
+.scr::-webkit-scrollbar{width:4px;}
+.scr::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+.scr.on{display:block;}
+#s-map{display:none;height:100%;padding:0;}
+#s-map.on{display:flex;flex-direction:column;}
+
+/* ══ CARDS ══ */
+.card{background:var(--card);border:1px solid var(--b);border-radius:11px;padding:11px;
+  margin-bottom:9px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--blue),var(--cyan));}
+.ct{font-family:'Orbitron';font-size:8.5px;font-weight:700;color:var(--blue);letter-spacing:2px;
+  margin-bottom:9px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ct::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--b),transparent);}
+
+/* ══ OPERATOR BLOCKS ══ */
+.opb{border-radius:10px;margin-bottom:10px;border:1px solid;overflow:hidden;}
+.oph{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px;}
+.opn{font-family:'Orbitron';font-size:10px;font-weight:900;letter-spacing:1.5px;display:flex;align-items:center;gap:7px;}
+.opmcc{font-family:'Share Tech Mono';font-size:7.5px;opacity:.6;}
+.bads{display:flex;gap:4px;flex-wrap:wrap;}
+.bad{padding:2px 6px;border-radius:9px;border:1px solid currentColor;font-family:'Orbitron';font-size:6.5px;font-weight:700;}
+
+/* Band pills */
+.bpill{display:inline-flex;align-items:center;padding:2px 6px;border-radius:9px;border:1px solid;
+  font-family:'Orbitron';font-size:7px;font-weight:700;margin-right:3px;margin-bottom:3px;}
+.bp2g{color:#bb88ff;border-color:#bb88ff;background:rgba(187,136,255,.1);}
+.bp3g{color:#7070ff;border-color:#7070ff;background:rgba(112,112,255,.1);}
+.bp4g{color:#0055ee;border-color:#0055ee;background:rgba(0,85,238,.1);}
+.bp5g{color:#00c8ff;border-color:#00c8ff;background:rgba(0,200,255,.1);}
+
+/* ══ CELL ROW ══ */
+.cr{padding:9px 12px;border-top:1px solid rgba(255,255,255,.04);}
+.crt{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px;gap:8px;}
+.cid{font-family:'Share Tech Mono';font-size:11px;font-weight:700;}
+.crsrp{font-family:'Orbitron';font-size:17px;font-weight:900;}
+.cmeta{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:4px;}
+.cm{font-family:'Share Tech Mono';font-size:8px;color:var(--dim);}
+.cm span{color:var(--txt);}
+.sstrip{display:flex;gap:5px;padding:5px 12px;background:rgba(0,0,0,.3);flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.03);}
+.sit{font-family:'Share Tech Mono';font-size:8px;display:flex;align-items:center;gap:3px;}
+
+/* Site name */
+.siterow{font-family:'Share Tech Mono';font-size:9px;padding:5px 12px;
+  background:rgba(0,0,0,.35);border-top:1px solid rgba(255,255,255,.03);
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+
+/* Neighbor section */
+.nbs{padding:0 12px 8px;}
+.nbt{font-family:'Orbitron';font-size:7px;font-weight:700;color:var(--yel);letter-spacing:2px;
+  padding:5px 0 4px;display:flex;align-items:center;gap:5px;}
+.nbt::after{content:'';flex:1;height:1px;background:rgba(255,200,0,.2);}
+.nbrow{display:flex;align-items:center;justify-content:space-between;padding:4px 0;
+  border-bottom:1px solid rgba(255,255,255,.03);font-family:'Share Tech Mono';font-size:8.5px;}
+.nbrsrp{font-family:'Orbitron';font-size:12px;font-weight:700;min-width:40px;text-align:right;}
+
+/* ══ OVERVIEW TABLE ══ */
+.qtbl{background:var(--card);border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-bottom:10px;}
+.qhd{display:grid;grid-template-columns:65px 75px 45px 85px 60px 70px 55px;
+  padding:5px 9px;background:rgba(0,200,255,.07);font-family:'Orbitron';font-size:6.5px;
+  font-weight:700;color:var(--blue);letter-spacing:.7px;gap:3px;}
+.qrow{display:grid;grid-template-columns:65px 75px 45px 85px 60px 70px 55px;
+  padding:6px 9px;border-bottom:1px solid rgba(0,200,255,.04);
+  font-family:'Share Tech Mono';font-size:8px;gap:3px;align-items:center;cursor:pointer;}
+.qrow:hover{background:rgba(0,200,255,.04);}
+
+/* ══ GAUGE ══ */
+.gg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px;}
+.gb{background:var(--card);border:1px solid var(--b);border-radius:10px;padding:9px;text-align:center;position:relative;}
+.gv{font-family:'Orbitron';font-size:20px;font-weight:900;}
+.gu{font-family:'Share Tech Mono';font-size:7px;color:var(--dim);margin-top:1px;}
+.gl{font-family:'Share Tech Mono';font-size:7px;color:var(--blue);letter-spacing:1px;}
+.sbars{display:flex;align-items:flex-end;gap:2px;justify-content:center;margin-top:4px;}
+.sb{width:5px;border-radius:1px;transition:height .5s,background .5s;}
+
+/* ══ MAP ══ */
+#leaflet-map{flex:1;z-index:1;}
+.map-ovl{position:absolute;z-index:1000;background:rgba(2,10,18,.92);
+  border:1px solid var(--b);border-radius:10px;padding:10px;}
+#map-top{top:8px;left:8px;right:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+#map-info{bottom:8px;left:8px;right:8px;max-height:200px;overflow-y:auto;}
+.tower-popup{font-family:'Share Tech Mono';font-size:10px;line-height:1.7;color:#000;}
+
+/* ══ LIVE SIGNAL BARS ══ */
+.sig-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:9px;}
+.sig-card{background:var(--card);border:1px solid var(--b);border-radius:10px;padding:10px;}
+.sig-op{font-family:'Orbitron';font-size:8px;font-weight:700;letter-spacing:1px;margin-bottom:6px;}
+.sig-bars{display:flex;align-items:flex-end;gap:3px;height:40px;margin-bottom:4px;}
+.sig-bar{flex:1;border-radius:2px 2px 0 0;transition:height .5s,background .5s;min-height:3px;}
+.sig-val{font-family:'Orbitron';font-size:14px;font-weight:900;text-align:center;}
+.sig-lbl{font-family:'Share Tech Mono';font-size:7.5px;color:var(--dim);text-align:center;}
+
+/* ══ CDR UPLOAD ══ */
+.dropzone{border:2px dashed var(--blue);border-radius:10px;padding:20px;text-align:center;
+  cursor:pointer;transition:all .2s;background:rgba(0,200,255,.03);}
+.dropzone:hover,.dropzone.drag{background:rgba(0,200,255,.08);border-color:var(--cyan);}
+.dropzone input{display:none;}
+.dz-txt{font-family:'Share Tech Mono';font-size:10px;color:var(--dim);margin-top:6px;}
+.dz-icon{font-size:28px;}
+
+/* ══ CDR TABLE ══ */
+.cdr-tbl{background:var(--card);border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-bottom:9px;}
+.cdr-hd{display:grid;padding:5px 9px;background:rgba(0,200,255,.07);font-family:'Orbitron';
+  font-size:6.5px;font-weight:700;color:var(--blue);letter-spacing:.7px;gap:3px;overflow-x:auto;}
+.cdr-row{display:grid;padding:5px 9px;border-bottom:1px solid rgba(0,200,255,.04);
+  font-family:'Share Tech Mono';font-size:8px;gap:3px;cursor:pointer;overflow-x:auto;}
+.cdr-row:hover{background:rgba(0,200,255,.04);}
+
+/* ══ LOCATION HEATMAP ══ */
+#loc-map{height:250px;border-radius:10px;overflow:hidden;margin-bottom:9px;border:1px solid var(--b);}
+
+/* ══ TARGET CARDS ══ */
+.tgt-card{background:var(--card);border:2px solid;border-radius:11px;padding:12px;margin-bottom:9px;position:relative;}
+.tgt-name{font-family:'Orbitron';font-size:12px;font-weight:700;letter-spacing:2px;margin-bottom:6px;}
+.tgt-num{font-family:'Share Tech Mono';font-size:11px;color:var(--cyan);}
+.tgt-status{position:absolute;top:10px;right:10px;padding:3px 9px;border-radius:20px;
+  border:1px solid;font-family:'Orbitron';font-size:7px;font-weight:700;}
+.tgt-status.active{color:var(--red);border-color:var(--red);animation:bk 1s infinite;}
+.tgt-status.watch{color:var(--yel);border-color:var(--yel);}
+.assoc-list{margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,200,255,.1);}
+.assoc-row{display:flex;align-items:center;gap:8px;padding:3px 0;font-family:'Share Tech Mono';font-size:9px;}
+
+/* ══ AI LIVE PANEL ══ */
+#ai-live-panel{background:#020d16;border:1px solid var(--blue);border-radius:10px;padding:12px;
+  min-height:100px;font-family:'Share Tech Mono';font-size:9.5px;color:var(--cyan);
+  line-height:1.8;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;}
+.ai-typing::after{content:'▌';animation:blink2 .7s infinite;}
+@keyframes blink2{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ══ ALERT BANNER ══ */
+.alert-banner{background:linear-gradient(90deg,rgba(255,26,56,.15),rgba(255,26,56,.05));
+  border:1px solid var(--red);border-radius:8px;padding:8px 12px;margin-bottom:9px;
+  display:flex;align-items:center;gap:8px;font-family:'Share Tech Mono';font-size:9px;
+  color:var(--red);animation:alert-pulse 2s infinite;}
+@keyframes alert-pulse{0%,100%{box-shadow:0 0 5px rgba(255,26,56,.3)}50%{box-shadow:0 0 15px rgba(255,26,56,.6)}}
+
+/* ══ DIRECTION COMPASS ══ */
+.comp-wrap{display:flex;justify-content:center;margin:8px 0;}
+.comp{width:180px;height:180px;border-radius:50%;border:2px solid var(--b);
+  background:radial-gradient(circle,#081828,#020a12);position:relative;
+  box-shadow:0 0 20px rgba(0,200,255,.15),inset 0 0 30px rgba(0,0,0,.5);}
+.cl{position:absolute;font-family:'Orbitron';font-size:9px;font-weight:700;color:var(--blue);}
+.cn{top:5px;left:50%;transform:translateX(-50%);color:var(--red);}
+.cs{bottom:5px;left:50%;transform:translateX(-50%);}
+.ce{right:5px;top:50%;transform:translateY(-50%);}
+.cw{left:5px;top:50%;transform:translateY(-50%);}
+
+/* ══ ROWS ══ */
+.or{display:flex;justify-content:space-between;align-items:flex-start;padding:4px 0;
+  font-size:11.5px;border-bottom:1px solid rgba(0,200,255,.04);}
+.ok{color:var(--dim);font-weight:500;flex-shrink:0;min-width:90px;}
+.ov{font-family:'Share Tech Mono';font-size:10px;text-align:right;flex:1;word-break:break-word;}
+
+/* ══ RSRP COLORS ══ */
+.ex{color:#28ff00;}.gd{color:#00c8ff;}.md{color:#ffc800;}.pr{color:#ff7200;}.bd{color:#ff1a38;}
+.rb{height:4px;border-radius:2px;background:rgba(255,255,255,.04);margin-top:4px;overflow:hidden;}
+.rbf{height:100%;border-radius:2px;transition:width 1s;}
+
+/* ══ BUTTONS ══ */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:8px;
+  border:1px solid;font-family:'Orbitron';font-size:8px;font-weight:700;letter-spacing:.8px;
+  cursor:pointer;transition:all .2s;}
+.btn-blue{color:var(--blue);border-color:var(--blue);background:rgba(0,200,255,.08);}
+.btn-blue:hover{background:rgba(0,200,255,.18);box-shadow:0 0 10px rgba(0,200,255,.3);}
+.btn-red{color:var(--red);border-color:var(--red);background:rgba(255,26,56,.08);}
+.btn-red:hover{background:rgba(255,26,56,.18);}
+.btn-green{color:var(--green);border-color:var(--green);background:rgba(40,255,0,.08);}
+.btn-green:hover{background:rgba(40,255,0,.18);}
+.btn-yel{color:var(--yel);border-color:var(--yel);background:rgba(255,200,0,.08);}
+.btn-purple{color:var(--purple);border-color:var(--purple);background:rgba(170,68,255,.08);}
+
+/* ══ INPUTS ══ */
+.inp{background:rgba(0,0,0,.4);border:1px solid var(--b);border-radius:7px;
+  padding:8px 11px;color:var(--txt);font-family:'Share Tech Mono';font-size:11px;
+  width:100%;outline:none;transition:border .2s;}
+.inp:focus{border-color:var(--blue);}
+.inp-label{font-family:'Share Tech Mono';font-size:8.5px;color:var(--dim);margin-bottom:4px;}
+.form-group{margin-bottom:10px;}
+
+/* ══ STAT GRID ══ */
+.s4{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-bottom:9px;}
+.sc{background:var(--card);border:1px solid var(--b);border-radius:10px;padding:10px;text-align:center;}
+.sv{font-family:'Orbitron';font-size:20px;font-weight:900;color:var(--cyan);}
+.sk{font-family:'Share Tech Mono';font-size:7.5px;color:var(--dim);margin-top:2px;letter-spacing:.8px;}
+
+/* ══ LOG TABLE ══ */
+.lhd,.lrow{display:grid;padding:5px 9px;font-family:'Share Tech Mono';font-size:8px;gap:3px;}
+.lhd{background:rgba(0,200,255,.07);font-family:'Orbitron';font-size:6.5px;font-weight:700;color:var(--blue);letter-spacing:.8px;}
+.lrow{border-bottom:1px solid rgba(0,200,255,.04);cursor:pointer;}
+.lrow:hover{background:rgba(0,200,255,.04);}
+
+/* ══ TOGGLE ══ */
+.tog{width:38px;height:20px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid var(--dim);
+  position:relative;cursor:pointer;transition:all .3s;flex-shrink:0;display:inline-block;}
+.tog.on{background:rgba(0,200,255,.2);border-color:var(--blue);}
+.tog::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--dim);transition:all .3s;}
+.tog.on::after{left:20px;background:var(--blue);}
+
+/* ══ NOTIF ══ */
+.notif{background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.2);border-radius:7px;
+  padding:6px 11px;margin-bottom:8px;font-family:'Share Tech Mono';font-size:8.5px;color:var(--cyan);
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+
+/* ══ AVAIL BAR ══ */
+.avr{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(0,200,255,.04);}
+.avl{font-family:'Share Tech Mono';font-size:9px;width:72px;flex-shrink:0;}
+.avt{flex:1;height:7px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;}
+.avf{height:100%;border-radius:3px;transition:width 1s;}
+.avp{font-family:'Orbitron';font-size:9px;font-weight:700;width:36px;text-align:right;flex-shrink:0;}
+
+/* ══ MOVEMENT TRACK ══ */
+.mv-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,200,255,.04);}
+.mv-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:2px;}
+.mv-txt{flex:1;font-family:'Share Tech Mono';font-size:9px;line-height:1.6;}
+.mv-time{font-size:8px;color:var(--dim);}
+
+/* ══ PINPOINT ══ */
+.pinpoint-box{background:rgba(255,26,56,.07);border:1px solid var(--red);border-radius:10px;padding:12px;margin-bottom:9px;}
+.pp-title{font-family:'Orbitron';font-size:10px;font-weight:700;color:var(--red);letter-spacing:2px;margin-bottom:8px;}
+.pp-coords{font-family:'Orbitron';font-size:18px;font-weight:900;color:var(--yel);text-align:center;margin:8px 0;}
+.pp-addr{font-family:'Share Tech Mono';font-size:10px;color:var(--cyan);text-align:center;}
+.confidence-bar{height:8px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;margin-top:8px;}
+.conf-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--red),var(--yel),var(--green));}
+
+/* ══ FOOTER ══ */
+#footer{text-align:center;padding:4px;border-top:1px solid var(--b);flex-shrink:0;
+  font-family:'Share Tech Mono';font-size:7.5px;color:var(--dim);letter-spacing:1px;}
+
+/* ══ MODAL ══ */
+.modal{display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.8);
+  align-items:center;justify-content:center;padding:16px;}
+.modal.show{display:flex;}
+.modal-box{background:#061520;border:1px solid var(--b);border-radius:12px;
+  width:100%;max-width:500px;max-height:80vh;overflow-y:auto;padding:16px;}
+.modal-title{font-family:'Orbitron';font-size:11px;font-weight:700;color:var(--blue);letter-spacing:2px;margin-bottom:14px;}
+
+/* ══ SCROLL X ══ */
+.ovx{overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--dim) transparent;}
+.ovx::-webkit-scrollbar{height:3px;}
+.ovx::-webkit-scrollbar-thumb{background:var(--dim);}
+
+/* ══ DB STATUS ══ */
+.db-row{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;
+  border-bottom:1px solid rgba(0,200,255,.05);font-size:11px;}
+.db-key{color:var(--dim);font-family:'Share Tech Mono';font-size:9px;}
+.db-val{font-family:'Share Tech Mono';font-size:10px;color:var(--cyan);}
+
+/* ══ ANIMATION ══ */
+.pulse{animation:pulse-anim 2s infinite;}
+@keyframes pulse-anim{0%,100%{opacity:1}50%{opacity:.5}}
+.scan-ring{width:14px;height:14px;border-radius:50%;border:2px solid var(--blue);
+  animation:scan-expand 1.5s infinite;opacity:.7;}
+@keyframes scan-expand{0%{transform:scale(.5);opacity:.8}100%{transform:scale(2);opacity:0}}
+
+/* ══ PROGRESS ══ */
+.progress-wrap{background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden;height:6px;margin:6px 0;}
+.progress-fill{height:100%;border-radius:4px;transition:width .3s;background:linear-gradient(90deg,var(--blue),var(--cyan));}
+</style>
+</head>
+<body>
+
+<!-- ══ SPLASH ══ -->
+<div id="splash">
+  <div class="spr"></div>
+  <div style="text-align:center;">
+    <div class="splogo">NEXUS SIGINT</div>
+    <div class="spsub">PAKISTAN INTELLIGENCE SYSTEM v4.0</div>
+    <div style="font-family:'Share Tech Mono';font-size:7.5px;color:var(--blue);letter-spacing:2px;margin-top:2px;">FAISAL MALIK © 2026 · ALL RIGHTS RESERVED</div>
+  </div>
+  <div class="spprog" style="width:0%"></div>
+  <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);" id="sp-msg">INITIALIZING...</div>
+</div>
+
+<!-- ══ HEADER ══ -->
+<div id="hdr">
+  <div class="hlogo">
+    <div class="hlic">
+      <svg viewBox="0 0 26 26" fill="none" width="22" height="22">
+        <circle cx="13" cy="13" r="3.5" fill="#00c8ff"/>
+        <circle cx="13" cy="3.5" r="2" fill="#00c8ff" opacity=".8"/>
+        <circle cx="22" cy="8" r="2" fill="#00c8ff" opacity=".8"/>
+        <circle cx="22" cy="18" r="2" fill="#00c8ff" opacity=".8"/>
+        <circle cx="13" cy="22.5" r="2" fill="#00c8ff" opacity=".8"/>
+        <circle cx="4" cy="18" r="2" fill="#00c8ff" opacity=".8"/>
+        <circle cx="4" cy="8" r="2" fill="#00c8ff" opacity=".8"/>
+        <line x1="13" y1="9.5" x2="13" y2="5.5" stroke="#00c8ff" stroke-width="1.2" opacity=".5"/>
+        <line x1="13" y1="16.5" x2="13" y2="20.5" stroke="#00c8ff" stroke-width="1.2" opacity=".5"/>
+        <line x1="16" y1="11.2" x2="20.2" y2="9.2" stroke="#00c8ff" stroke-width="1.2" opacity=".5"/>
+        <line x1="10" y1="14.8" x2="5.8" y2="16.8" stroke="#00c8ff" stroke-width="1.2" opacity=".5"/>
+        <line x1="16" y1="14.8" x2="20.2" y2="16.8" stroke="#00c8ff" stroke-width="1.2" opacity=".5"/>
+        <line x1="10" y1="11.2" x2="5.8" y2="9.2" stroke="#00c8ff" stroke-width="1.2" opacity=".5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="hlt">NEXUS SIGINT</div>
+      <div class="hls">PK INTELLIGENCE SYSTEM v4.0</div>
+    </div>
+  </div>
+  <div class="hright">
+    <input id="srch-inp" placeholder="🔍 Search number / CID / site..." oninput="globalSearch(this.value)"/>
+    <div class="live-pill"><div class="ld"></div><span id="live-status">SCANNING</span></div>
+    <span class="hclk" id="clk">--:--</span>
+  </div>
+</div>
+
+<!-- ══ TABS ══ -->
+<div id="tabs">
+  <div class="tab on"  onclick="go('overview',this)">🌐 OVERVIEW</div>
+  <div class="tab"     onclick="go('gauge',this)">📡 GAUGE</div>
+  <div class="tab"     onclick="go('map',this)">🗺️ MAP</div>
+  <div class="tab"     onclick="go('geofence',this)">🎯 GEOFENCE</div>
+  <div class="tab"     onclick="go('azimuth',this)">🧭 AZIMUTH</div>
+  <div class="tab"     onclick="go('stats',this)">📈 LIVE STATS</div>
+  <div class="tab"     onclick="go('cdr',this)" id="tab-cdr">📊 CDR ANALYSIS</div>
+  <div class="tab"     onclick="go('targets',this)" id="tab-tgt">🎯 TARGETS</div>
+  <div class="tab"     onclick="go('upload',this)">📤 UPLOAD/DB</div>
+  <div class="tab"     onclick="go('search',this)">🔍 SEARCH/AI</div>
+  <div class="tab"     onclick="go('log',this)">📝 LOG</div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div id="main">
+
+<!-- ════════════════════════════════════════════════
+     OVERVIEW — ALL 5 NETWORKS FULL DETAIL
+     ════════════════════════════════════════════════ -->
+<div class="scr on" id="s-overview">
+
+  <div class="notif" id="ov-notif">📡 5 operators · Ali Town, Adyala Link Rd, Rawalpindi · 33.5540°N 73.0531°E · <span id="ov-time">--:--</span></div>
+
+  <!-- UFONE -->
+  <div class="opb" style="border-color:var(--ufone);" id="blk-ufone">
+    <div class="oph" style="background:linear-gradient(135deg,rgba(255,102,0,.16),rgba(255,102,0,.05));">
+      <div class="opn" style="color:var(--ufone);">🟠 UFONE <span class="opmcc">410-03</span></div>
+      <div class="bads">
+        <span class="bad" style="color:var(--ufone);">LTE-A</span>
+        <span class="bad" style="color:#28ff00;">★ SIM1 SERVING</span>
+        <span class="bad" style="color:var(--blue);">VoLTE</span>
+      </div>
+    </div>
+
+    <!-- ALL BANDS: 2G GSM -->
+    <div class="cr" style="background:rgba(255,102,0,.03);">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:var(--ufone);letter-spacing:2px;margin-bottom:3px;">★ SERVING · 4G LTE-A</div>
+          <div class="cid" style="color:var(--ufone);">eNB: 111315 · Sector 2</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">CID: 111315:2 · LAC/TAC: 18810 · PCI: 337 · EARFCN: 1276</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="crsrp md" id="u4g-rsrp">-97</div>
+          <div style="font-family:'Share Tech Mono';font-size:7px;color:var(--dim);">dBm</div>
+          <div style="font-family:'Orbitron';font-size:7px;color:var(--yel);margin-top:1px;">MODERATE</div>
+        </div>
+      </div>
+      <div style="margin-bottom:5px;">
+        <span class="bpill bp4g">4G LTE-A</span>
+        <span class="bpill" style="color:var(--ufone);border-color:var(--ufone);background:rgba(255,102,0,.1);">Band 3 · 1800+</span>
+        <span class="bpill" style="color:var(--dim);border-color:var(--dim);">15+5 MHz FDD</span>
+      </div>
+      <div class="cmeta">
+        <span class="cm">RSRP:<span class="md"> -97</span></span>
+        <span class="cm">RSRQ:<span> -14dB</span></span>
+        <span class="cm">RSSNR:<span> 3dB</span></span>
+        <span class="cm">RSSI:<span> -83</span></span>
+        <span class="cm">TA:<span style="color:#28ff00;"> 2 (~85yd)</span></span>
+        <span class="cm">PCI:<span> 337</span></span>
+        <span class="cm">AZ:<span style="color:var(--ufone);"> ~120°SE</span></span>
+        <span class="cm">Dist:<span style="color:#28ff00;"> ~76m</span></span>
+      </div>
+      <div class="rb"><div class="rbf" style="width:45%;background:linear-gradient(90deg,#ff7200,#ffc800);"></div></div>
+    </div>
+    <div class="cr" style="opacity:.78;">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:rgba(255,102,0,.7);letter-spacing:2px;margin-bottom:2px;">GSM · 2G</div>
+          <div class="cid" style="color:rgba(255,102,0,.75);">LAC: 18810 · CID: 41293</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">ARFCN: 731 · Band 8 · 900 MHz · BSIC: 42</div>
+        </div>
+        <div style="text-align:right;"><div class="crsrp pr">-88</div><div style="font-family:'Share Tech Mono';font-size:7px;color:var(--dim);">dBm</div></div>
+      </div>
+      <div><span class="bpill bp2g">2G GSM</span><span class="bpill" style="color:var(--ufone);border-color:var(--ufone);">Band 8 · 900</span></div>
+      <div class="cmeta"><span class="cm">RxLev:<span> -88</span></span><span class="cm">BER:<span> 0</span></span><span class="cm">AZ:<span> ~120°</span></span><span class="cm">Dist:<span> ~76m</span></span></div>
+      <div class="rb"><div class="rbf" style="width:52%;background:linear-gradient(90deg,#ff7200,#ffc800);"></div></div>
+    </div>
+    <div class="siterow">
+      <span>📍</span><span style="color:var(--ufone);font-weight:700;">SITE:</span>
+      <span style="color:var(--txt);">Adyala Link Road · Mumtaz Market · Rawalpindi</span>
+      <span style="color:var(--dim);margin-left:auto;">eNB:111315 · 33.5535°N 73.0522°E</span>
+      <a href="https://maps.google.com/?q=33.5535,73.0522" target="_blank" style="color:var(--blue);font-size:8px;text-decoration:none;">🗺️ MAP</a>
+    </div>
+    <div class="sstrip">
+      <div class="sit">🧭 Sec2: ~120° SE</div>
+      <div class="sit">📶 B3·1800 + B8·900</div>
+      <div class="sit" style="color:#28ff00;">★ SERVING SIM1</div>
+      <div class="sit">TA:2 · ~76m</div>
+      <div class="sit" style="color:var(--blue);">VoLTE ✓</div>
+    </div>
+    <div class="nbs">
+      <div class="nbt">UFONE NEIGHBOR CELLS</div>
+      <div class="nbrow">
+        <div>
+          <div style="color:rgba(255,102,0,.8);font-weight:700;">eNB:111315 · Sec1 · PCI:336</div>
+          <div style="color:var(--dim);font-size:7.5px;">LAC:18810 · B3:1800 · AZ:~60°NE · ~150m</div>
+          <div style="color:var(--dim);font-size:7.5px;">Site: Adyala Link Rd (Sec1) · 33.5536°N 73.0525°E</div>
+        </div>
+        <div style="text-align:right;"><div class="nbrsrp pr">-104</div><div style="font-family:'Share Tech Mono';font-size:7px;color:var(--dim);">4G NB</div></div>
+      </div>
+      <div class="nbrow">
+        <div>
+          <div style="color:rgba(255,102,0,.7);font-weight:700;">ECI:268435455 · LCID:1048575-255</div>
+          <div style="color:var(--dim);font-size:7.5px;">PCI:336 · ASU:36 · RSRQ:-17dB · B3</div>
+          <div style="color:var(--dim);font-size:7.5px;">Site: Unknown · ~200m est.</div>
+        </div>
+        <div style="text-align:right;"><div class="nbrsrp pr">-104</div><div style="font-family:'Share Tech Mono';font-size:7px;color:var(--dim);">NB#1</div></div>
+      </div>
+      <div class="nbrow">
+        <div>
+          <div style="color:rgba(255,102,0,.6);">LAC:18810 · CID:41293 · ARFCN:731</div>
+          <div style="color:var(--dim);font-size:7.5px;">GSM 900 · Boring Rd · Dhok Matkal · ~2km</div>
+          <div style="color:var(--dim);font-size:7.5px;">Site: Khasra#816 Boring Rd · 33.6225°N 73.0368°E</div>
+        </div>
+        <div style="text-align:right;"><div class="nbrsrp bd">-102</div><div style="font-family:'Share Tech Mono';font-size:7px;color:var(--dim);">2G NB</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAZZ -->
+  <div class="opb" style="border-color:var(--jazz);">
+    <div class="oph" style="background:linear-gradient(135deg,rgba(227,24,55,.16),rgba(227,24,55,.05));">
+      <div class="opn" style="color:var(--jazz);">🔴 JAZZ <span class="opmcc">410-01</span></div>
+      <div class="bads">
+        <span class="bad" style="color:var(--jazz);">LTE 4G</span>
+        <span class="bad" style="color:#28ff00;">★ SIM2 SERVING</span>
+        <span class="bad" style="color:var(--blue);">VoLTE</span>
+      </div>
+    </div>
+    <div class="cr" style="background:rgba(227,24,55,.03);">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:var(--jazz);letter-spacing:2px;margin-bottom:2px;">★ SERVING · 4G LTE</div>
+          <div class="cid" style="color:var(--jazz);">eNB: 111509 · Sector 7</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">CID: 111509:7 · LAC/TAC: 60604 · PCI: 99 · EARFCN: 1850</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="crsrp pr" id="j4g-rsrp">-107</div>
+          <div style="font-family:'Share Tech Mono';font-size:7px;color:var(--dim);">dBm</div>
+          <div style="font-family:'Orbitron';font-size:7px;color:var(--or);margin-top:1px;">POOR</div>
+        </div>
+      </div>
+      <div><span class="bpill bp4g">4G LTE</span><span class="bpill" style="color:var(--jazz);border-color:var(--jazz);">Band 3 · 1800+</span><span class="bpill" style="color:var(--dim);border-color:var(--dim);">20 MHz FDD</span></div>
+      <div class="cmeta">
+        <span class="cm">RSRP:<span class="pr"> -107</span></span><span class="cm">RSRQ:<span> -16dB</span></span>
+        <span class="cm">RSSNR:<span> -4dB</span></span><span class="cm">RSSI:<span> -91</span></span>
+        <span class="cm">AZ:<span style="color:var(--jazz);"> ~340°NNW</span></span><span class="cm">BW:<span> 20MHz</span></span>
+      </div>
+      <div class="rb"><div class="rbf" style="width:27%;background:linear-gradient(90deg,#ff1a38,#ff7200);"></div></div>
+    </div>
+    <!-- Jazz 2G -->
+    <div class="cr" style="opacity:.8;">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:rgba(227,24,55,.7);letter-spacing:2px;margin-bottom:2px;">GSM · 2G</div>
+          <div class="cid" style="color:rgba(227,24,55,.75);">LAC: 60604 · CID: 110598:23</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">EARFCN:3748 · Band 8 · 900 GSM · PCI:47</div>
+        </div>
+        <div style="text-align:right;"><div class="crsrp bd">-96</div></div>
+      </div>
+      <div><span class="bpill bp2g">2G GSM</span><span class="bpill bp4g">4G B8·900</span></div>
+      <div class="cmeta"><span class="cm">AZ:<span> ~200°S</span></span><span class="cm">PCI:<span> 47</span></span></div>
+      <div class="rb"><div class="rbf" style="width:30%;background:#ff1a38;"></div></div>
+    </div>
+    <!-- Jazz 3G -->
+    <div class="cr" style="opacity:.75;">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:rgba(227,24,55,.65);letter-spacing:2px;margin-bottom:2px;">WCDMA · 3G</div>
+          <div class="cid" style="color:rgba(227,24,55,.7);">LAC: 60604 · PCI: 437</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">EARFCN:250 · Band 1 · 2100 MHz</div>
+        </div>
+        <div style="text-align:right;"><div class="crsrp bd">-98</div></div>
+      </div>
+      <div><span class="bpill bp3g">3G WCDMA</span><span class="bpill" style="color:#0055ee;border-color:#0055ee;">B1 · 2100</span></div>
+      <div class="rb"><div class="rbf" style="width:22%;background:#ff1a38;"></div></div>
+    </div>
+    <div class="siterow">
+      <span>📍</span><span style="color:var(--jazz);font-weight:700;">SITE:</span>
+      <span>Ali Town · Adyala Road Area · Rawalpindi</span>
+      <span style="color:var(--dim);margin-left:auto;">eNB:111509 · 33.5545°N 73.0538°E</span>
+      <a href="https://maps.google.com/?q=33.5545,73.0538" target="_blank" style="color:var(--blue);font-size:8px;text-decoration:none;">🗺️ MAP</a>
+    </div>
+    <div class="sstrip">
+      <div class="sit">🧭 Sec7: ~340° NNW</div>
+      <div class="sit">📶 B3+B8+B1</div>
+      <div class="sit" style="color:#28ff00;">★ SERVING SIM2</div>
+    </div>
+    <div class="nbs">
+      <div class="nbt">JAZZ NEIGHBOR CELLS</div>
+      <div class="nbrow">
+        <div>
+          <div style="color:rgba(227,24,55,.8);font-weight:700;">eNB:110598·Sec23·PCI:47</div>
+          <div style="color:var(--dim);font-size:7.5px;">B8·900·EARFCN:3748·AZ:~200°S</div>
+          <div style="color:var(--dim);font-size:7.5px;">Site: Ali Town South · 33.5525°N 73.0530°E · ~180m</div>
+        </div>
+        <div style="text-align:right;"><div class="nbrsrp bd">-96</div><div style="font-family:'Share Tech Mono';font-size:7px;color:var(--dim);">4G NB</div></div>
+      </div>
+      <div class="nbrow">
+        <div>
+          <div style="color:rgba(227,24,55,.7);">PCI:437·EARFCN:250·B1:2100</div>
+          <div style="color:var(--dim);font-size:7.5px;">3G WCDMA · AZ:~270°W · ~300m</div>
+          <div style="color:var(--dim);font-size:7.5px;">Site: Adyala Rd West · est. 33.5540°N 73.0500°E</div>
+        </div>
+        <div style="text-align:right;"><div class="nbrsrp bd">-98</div><div style="font-family:'Share Tech Mono';font-size:7px;color:var(--dim);">3G NB</div></div>
+      </div>
+      <div class="nbrow">
+        <div>
+          <div style="color:rgba(227,24,55,.65);">PCI:440·EARFCN:3748·B8:900GSM</div>
+          <div style="color:var(--dim);font-size:7.5px;">4G NB · AZ:~310°NW</div>
+        </div>
+        <div style="text-align:right;"><div class="nbrsrp bd">-97</div></div>
+      </div>
+      <div class="nbrow">
+        <div>
+          <div style="color:rgba(227,24,55,.6);">CID:111509:2·TAC:60604</div>
+          <div style="color:var(--dim);font-size:7.5px;">B3·1800·Sector 2</div>
+        </div>
+        <div style="text-align:right;"><div class="nbrsrp bd">-100</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WARID -->
+  <div class="opb" style="border-color:var(--warid);">
+    <div class="oph" style="background:linear-gradient(135deg,rgba(123,34,194,.16),rgba(123,34,194,.05));">
+      <div class="opn" style="color:var(--warid);">🟣 WARID <span class="opmcc">410-07</span></div>
+      <div class="bads"><span class="bad" style="color:var(--warid);">4G/3G</span><span class="bad" style="color:var(--dim);">BASEBAND SCAN</span></div>
+    </div>
+    <div class="cr" style="opacity:.78;">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:var(--warid);letter-spacing:2px;margin-bottom:2px;">4G LTE · DETECTED</div>
+          <div class="cid" style="color:var(--warid);">LAC: 50607 · CID: 111585:32</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">EARFCN:1850·B3:1800·Sector 32</div>
+        </div>
+        <div style="text-align:right;"><div class="crsrp pr">-101</div></div>
+      </div>
+      <div><span class="bpill bp4g">4G LTE</span><span class="bpill" style="color:var(--warid);border-color:var(--warid);">B3·1800</span></div>
+      <div class="cmeta"><span class="cm">AZ:<span style="color:var(--warid);"> ~280°W</span></span><span class="cm">Dist:<span> ~18km</span></span></div>
+      <div class="rb"><div class="rbf" style="width:28%;background:linear-gradient(90deg,#ff1a38,#ff7200);"></div></div>
+    </div>
+    <!-- Warid 3G -->
+    <div class="cr" style="opacity:.65;">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:rgba(123,34,194,.7);margin-bottom:2px;">WCDMA · 3G</div>
+          <div class="cid" style="color:rgba(123,34,194,.7);">LAC: 50607 · UARFCN: 10713</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">Band 1 · 2100 MHz · distant</div>
+        </div>
+        <div style="text-align:right;"><div class="crsrp bd">-112</div></div>
+      </div>
+      <div><span class="bpill bp3g">3G HSPA</span></div>
+      <div class="rb"><div class="rbf" style="width:10%;background:#ff1a38;"></div></div>
+    </div>
+    <div class="siterow">
+      <span>📍</span><span style="color:var(--warid);font-weight:700;">SITE:</span>
+      <span>Rawalpindi West · ~18km · AZ:~280°W</span>
+      <span style="color:var(--dim);margin-left:auto;">LAC:50607</span>
+      <a href="https://maps.google.com/?q=33.5540,72.9000" target="_blank" style="color:var(--blue);font-size:8px;text-decoration:none;">🗺️ MAP</a>
+    </div>
+    <div class="nbs">
+      <div class="nbt">WARID NEIGHBOR CELLS</div>
+      <div class="nbrow"><div><div style="color:rgba(123,34,194,.75);">LAC:50607·CID:111585:31·B3·Sec31</div><div style="color:var(--dim);font-size:7.5px;">AZ:~260° · ~18km</div></div><div style="text-align:right;"><div class="nbrsrp bd">-108</div></div></div>
+      <div class="nbrow"><div><div style="color:rgba(123,34,194,.65);">CID:111585:32·EARFCN:1850</div><div style="color:var(--dim);font-size:7.5px;">B3·Sector 32 variation</div></div><div style="text-align:right;"><div class="nbrsrp bd">-112</div></div></div>
+    </div>
+  </div>
+
+  <!-- ZONG -->
+  <div class="opb" style="border-color:var(--zong);">
+    <div class="oph" style="background:linear-gradient(135deg,rgba(204,0,51,.14),rgba(204,0,51,.04));">
+      <div class="opn" style="color:var(--zong);">🔴 ZONG <span class="opmcc">410-08</span></div>
+      <div class="bads"><span class="bad" style="color:var(--zong);">4G/3G/2G</span><span class="bad" style="color:var(--dim);">BASEBAND SCAN</span></div>
+    </div>
+    <div class="cr" style="opacity:.75;">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:var(--zong);letter-spacing:2px;margin-bottom:2px;">2G GSM · DETECTED</div>
+          <div class="cid" style="color:var(--zong);">LAC: 52228 · CID: 13019:41</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">BCCH:56·Band 8·900 GSM·Sector 41</div>
+        </div>
+        <div style="text-align:right;"><div class="crsrp bd">-110</div></div>
+      </div>
+      <div><span class="bpill bp2g">2G GSM</span><span class="bpill" style="color:var(--zong);border-color:var(--zong);">B8·900</span></div>
+      <div class="cmeta"><span class="cm">AZ:<span style="color:var(--zong);"> ~050°NE</span></span><span class="cm">Dist:<span> ~27km</span></span><span class="cm">Area:<span> ICHS Punjab</span></span></div>
+      <div class="rb"><div class="rbf" style="width:13%;background:#ff1a38;"></div></div>
+    </div>
+    <!-- Zong 4G -->
+    <div class="cr" style="opacity:.65;">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:rgba(204,0,51,.65);margin-bottom:2px;">4G LTE · DISTANT</div>
+          <div class="cid" style="color:rgba(204,0,51,.65);">Cell ID (Hex): E792C0B2</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">Pirwadahi Rawalpindi · 33.6293°N 73.0402°E</div>
+        </div>
+        <div style="text-align:right;"><div class="crsrp bd">-115</div></div>
+      </div>
+      <div><span class="bpill bp4g">4G LTE</span></div>
+      <div class="rb"><div class="rbf" style="width:8%;background:#ff1a38;"></div></div>
+    </div>
+    <div class="siterow">
+      <span>📍</span><span style="color:var(--zong);font-weight:700;">SITE:</span>
+      <span>ICHS Town · Punjab · ~27km NE</span>
+      <span style="color:var(--dim);margin-left:auto;">LAC:52228</span>
+      <a href="https://maps.google.com/?q=33.6293,73.0402" target="_blank" style="color:var(--blue);font-size:8px;text-decoration:none;">🗺️ MAP</a>
+    </div>
+    <div class="nbs">
+      <div class="nbt">ZONG NEIGHBOR CELLS</div>
+      <div class="nbrow"><div><div style="color:rgba(204,0,51,.7);">LAC:52228·CID:13019:33·GSM 900</div><div style="color:var(--dim);font-size:7.5px;">Sector 33 · ~27km</div></div><div style="text-align:right;"><div class="nbrsrp bd">-115</div></div></div>
+      <div class="nbrow"><div><div style="color:rgba(204,0,51,.6);">CID(hex):E792C297·Pirwadahi·2G</div><div style="color:var(--dim);font-size:7.5px;">33.6293°N 73.0402°E</div></div><div style="text-align:right;"><div class="nbrsrp bd">-116</div></div></div>
+    </div>
+  </div>
+
+  <!-- TELENOR -->
+  <div class="opb" style="border-color:var(--tel);">
+    <div class="oph" style="background:linear-gradient(135deg,rgba(0,117,190,.14),rgba(0,117,190,.04));">
+      <div class="opn" style="color:var(--tel);">🔵 TELENOR <span class="opmcc">410-06</span></div>
+      <div class="bads"><span class="bad" style="color:var(--tel);">4G/3G/2G</span><span class="bad" style="color:var(--dim);">BASEBAND SCAN</span></div>
+    </div>
+    <div class="cr" style="opacity:.75;">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:var(--tel);letter-spacing:2px;margin-bottom:2px;">2G GSM · H-13 ISB</div>
+          <div class="cid" style="color:var(--tel);">LAC: 58806 · CID: 13623:24</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">ARFCN:53·Band 8·900·H-13 Islamabad·~21km</div>
+        </div>
+        <div style="text-align:right;"><div class="crsrp bd">-109</div></div>
+      </div>
+      <div><span class="bpill bp2g">2G GSM</span><span class="bpill" style="color:var(--tel);border-color:var(--tel);">B8·900</span></div>
+      <div class="cmeta"><span class="cm">AZ:<span style="color:var(--tel);"> ~010°N</span></span><span class="cm">Dist:<span> ~21km</span></span><span class="cm">Area:<span> H-13 Isb</span></span></div>
+      <div class="rb"><div class="rbf" style="width:13%;background:#ff1a38;"></div></div>
+    </div>
+    <div class="cr" style="opacity:.68;">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:rgba(0,117,190,.65);margin-bottom:2px;">2G GSM · RWP</div>
+          <div class="cid" style="color:rgba(0,117,190,.68);">LAC: 58806 · CID: 32064:33</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">ARFCN:54·Band 8·900·Rawalpindi·~4km</div>
+        </div>
+        <div style="text-align:right;"><div class="crsrp bd">-106</div></div>
+      </div>
+      <div><span class="bpill bp2g">2G GSM</span></div>
+      <div class="rb"><div class="rbf" style="width:16%;background:#ff1a38;"></div></div>
+    </div>
+    <div class="cr" style="opacity:.62;">
+      <div class="crt">
+        <div>
+          <div style="font-family:'Orbitron';font-size:7px;color:rgba(0,117,190,.6);margin-bottom:2px;">4G LTE · DISTANT</div>
+          <div class="cid" style="color:rgba(0,117,190,.62);">CID(hex):2E823916·Peshawar</div>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">PSH4979 · Near Circular Rd · 34.006°N 71.598°E</div>
+        </div>
+        <div style="text-align:right;"><div class="crsrp bd">-118</div></div>
+      </div>
+      <div><span class="bpill bp4g">4G LTE</span></div>
+      <div class="rb"><div class="rbf" style="width:5%;background:#ff1a38;"></div></div>
+    </div>
+    <div class="siterow">
+      <span>📍</span><span style="color:var(--tel);font-weight:700;">SITES:</span>
+      <span>H-13 Isb / Rawalpindi Area / Peshawar (distant)</span>
+      <a href="https://maps.google.com/?q=33.625,73.036" target="_blank" style="color:var(--blue);font-size:8px;text-decoration:none;margin-left:auto;">🗺️ MAP</a>
+    </div>
+    <div class="nbs">
+      <div class="nbt">TELENOR NEIGHBOR CELLS</div>
+      <div class="nbrow"><div><div style="color:rgba(0,117,190,.75);">LAC:58806·CID:13623:24·GSM·H13 Isb</div><div style="color:var(--dim);font-size:7.5px;">AZ:~010°N · ~21km · 33.625°N 73.036°E</div></div><div style="text-align:right;"><div class="nbrsrp bd">-109</div></div></div>
+      <div class="nbrow"><div><div style="color:rgba(0,117,190,.65);">LAC:58806·CID:32064:33·GSM·Rwp</div><div style="color:var(--dim);font-size:7.5px;">AZ:~030° · ~4km</div></div><div style="text-align:right;"><div class="nbrsrp bd">-106</div></div></div>
+      <div class="nbrow"><div><div style="color:rgba(0,117,190,.55);">LAC:58806·CID:35874:36·GSM</div><div style="color:var(--dim);font-size:7.5px;">AZ:~350° · ~18km</div></div><div style="text-align:right;"><div class="nbrsrp bd">-113</div></div></div>
+    </div>
+  </div>
+
+  <!-- QUICK COMPARISON TABLE -->
+  <div class="card">
+    <div class="ct">📊 QUICK COMPARISON TABLE — ALL OPERATORS</div>
+    <div class="ovx">
+      <div style="min-width:560px;">
+        <div class="qhd"><div>OPERATOR</div><div>CID / eNB</div><div>RSRP</div><div>BAND (2G·3G·4G·5G)</div><div>DIST·AZ</div><div>SITE / LOCATION</div><div>STATUS</div></div>
+        <div class="qrow" style="background:rgba(255,102,0,.05);">
+          <div style="color:var(--ufone);font-weight:700;">UFONE</div>
+          <div style="font-size:7.5px;">111315:2·Sec2</div>
+          <div class="md">-97</div>
+          <div><span class="bpill bp4g" style="font-size:6px;">4G·B3</span><span class="bpill bp2g" style="font-size:6px;">2G·B8</span></div>
+          <div style="font-size:7.5px;color:#28ff00;">~76m·120°</div>
+          <div style="font-size:7px;">Adyala Link Rd</div>
+          <div style="color:#28ff00;font-size:7.5px;font-family:'Orbitron';">★SIM1</div>
+        </div>
+        <div class="qrow" style="background:rgba(227,24,55,.04);">
+          <div style="color:var(--jazz);font-weight:700;">JAZZ</div>
+          <div style="font-size:7.5px;">111509:7·Sec7</div>
+          <div class="pr">-107</div>
+          <div><span class="bpill bp4g" style="font-size:6px;">4G·B3</span><span class="bpill bp3g" style="font-size:6px;">3G·B1</span><span class="bpill bp2g" style="font-size:6px;">2G·B8</span></div>
+          <div style="font-size:7.5px;">—·340°</div>
+          <div style="font-size:7px;">Ali Town</div>
+          <div style="color:#28ff00;font-size:7.5px;font-family:'Orbitron';">★SIM2</div>
+        </div>
+        <div class="qrow" style="opacity:.8;">
+          <div style="color:var(--jazz);">JAZZ NB</div>
+          <div style="font-size:7.5px;">110598:23·S23</div>
+          <div class="bd">-96</div>
+          <div><span class="bpill bp2g" style="font-size:6px;">2G·B8</span><span class="bpill bp4g" style="font-size:6px;">4G</span></div>
+          <div style="font-size:7.5px;">~180m·200°</div>
+          <div style="font-size:7px;">Ali Town S</div>
+          <div style="color:var(--yel);font-size:7.5px;font-family:'Orbitron';">NB</div>
+        </div>
+        <div class="qrow" style="opacity:.75;">
+          <div style="color:var(--warid);">WARID</div>
+          <div style="font-size:7.5px;">50607:32·S32</div>
+          <div class="pr">-101</div>
+          <div><span class="bpill bp4g" style="font-size:6px;">4G·B3</span><span class="bpill bp3g" style="font-size:6px;">3G</span></div>
+          <div style="font-size:7.5px;">~18km·280°</div>
+          <div style="font-size:7px;">Rwp West</div>
+          <div style="color:var(--dim);font-size:7.5px;font-family:'Orbitron';">SCAN</div>
+        </div>
+        <div class="qrow" style="opacity:.7;">
+          <div style="color:var(--zong);">ZONG</div>
+          <div style="font-size:7.5px;">52228:41·S41</div>
+          <div class="bd">-110</div>
+          <div><span class="bpill bp2g" style="font-size:6px;">2G·B8</span><span class="bpill bp4g" style="font-size:6px;">4G</span></div>
+          <div style="font-size:7.5px;">~27km·050°</div>
+          <div style="font-size:7px;">ICHS Punjab</div>
+          <div style="color:var(--dim);font-size:7.5px;font-family:'Orbitron';">SCAN</div>
+        </div>
+        <div class="qrow" style="opacity:.7;">
+          <div style="color:var(--tel);">TELENOR</div>
+          <div style="font-size:7.5px;">58806:24·S24</div>
+          <div class="bd">-109</div>
+          <div><span class="bpill bp2g" style="font-size:6px;">2G·B8</span><span class="bpill bp4g" style="font-size:6px;">4G</span><span class="bpill bp3g" style="font-size:6px;">3G</span></div>
+          <div style="font-size:7.5px;">~21km·010°</div>
+          <div style="font-size:7px;">H-13 Isb</div>
+          <div style="color:var(--dim);font-size:7.5px;font-family:'Orbitron';">SCAN</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ GAUGE ════════════════ -->
+<div class="scr" id="s-gauge">
+  <div class="notif">📡 5 SIMs · Forensic Mode · Ali Town · <span id="g-time">--:--</span></div>
+  <div class="gg" id="gauge-grid">
+    <!-- Gauges built by JS -->
+  </div>
+  <div class="card">
+    <div class="ct">📍 GPS + TOWER FORENSIC DATA</div>
+    <div class="or"><span class="ok">GPS</span><span class="ov gd" id="gps-coord">33.5540°N · 73.0531°E</span></div>
+    <div class="or"><span class="ok">Accuracy</span><span class="ov gd">±19 yd</span></div>
+    <div class="or"><span class="ok">Bearing</span><span class="ov">178.2° · 1.66 mph</span></div>
+    <div class="or"><span class="ok">Serving Tower</span><span class="ov" style="color:var(--ufone);">eNB:111315·Sec2·Adyala Link Rd</span></div>
+    <div class="or"><span class="ok">Tower GPS</span><span class="ov">33.5535°N · 73.0522°E</span></div>
+    <div class="or"><span class="ok">Distance to Tower</span><span class="ov gd">~76m (TA:2)</span></div>
+    <div class="or"><span class="ok">Direction to Tower</span><span class="ov" style="color:var(--yel);">~120° SE</span></div>
+    <div class="or" style="margin-top:6px;">
+      <span class="ok">Map Link</span>
+      <span class="ov">
+        <a href="https://maps.google.com/?q=33.5540,73.0531" target="_blank" class="btn btn-blue" style="font-size:7.5px;padding:3px 9px;text-decoration:none;">🗺️ MY LOCATION</a>
+        &nbsp;
+        <a href="https://maps.google.com/?q=33.5535,73.0522" target="_blank" class="btn btn-yel" style="font-size:7.5px;padding:3px 9px;text-decoration:none;">📡 TOWER</a>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ MAP ════════════════ -->
+<div class="scr" id="s-map">
+  <div id="map-top" class="map-ovl" style="position:relative;border-radius:0;border:none;border-bottom:1px solid var(--b);padding:7px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+    <button class="btn btn-blue" onclick="mapCenter()" style="padding:4px 10px;">📍 ME</button>
+    <button class="btn btn-blue" onclick="mapAllTowers()" style="padding:4px 10px;">📡 ALL TOWERS</button>
+    <button class="btn btn-yel" onclick="mapSectors()" style="padding:4px 10px;">🎯 SECTORS</button>
+    <button class="btn btn-green" onclick="mapCDRPoints()" style="padding:4px 10px;">📊 CDR POINTS</button>
+    <select id="map-op-filter" onchange="filterMapOp()" style="background:var(--card);border:1px solid var(--b);border-radius:6px;color:var(--txt);padding:4px 8px;font-family:'Share Tech Mono';font-size:8.5px;">
+      <option value="all">All Operators</option>
+      <option value="ufone">UFONE</option>
+      <option value="jazz">JAZZ</option>
+      <option value="warid">WARID</option>
+      <option value="zong">ZONG</option>
+      <option value="telenor">TELENOR</option>
+    </select>
+    <div style="margin-left:auto;font-family:'Share Tech Mono';font-size:8px;color:var(--cyan);" id="map-status">Click tower for details</div>
+  </div>
+  <div id="leaflet-map" style="flex:1;"></div>
+  <div id="map-info" style="background:var(--panel);border-top:1px solid var(--b);padding:8px 12px;max-height:160px;overflow-y:auto;display:none;">
+    <div id="map-info-content"></div>
+  </div>
+</div>
+
+<!-- ════════════════ GEOFENCE ════════════════ -->
+<div class="scr" id="s-geofence">
+  <div class="card">
+    <div class="ct">🎯 GEOFENCE ZONE — Ali Town, Rawalpindi</div>
+    <div class="or"><span class="ok">GPS</span><span class="ov gd">33.55403°N · 73.05325°E</span></div>
+    <div class="or"><span class="ok">Accuracy</span><span class="ov gd">±19 yd</span></div>
+    <div class="or"><span class="ok">Bearing/Speed</span><span class="ov">178.2° · 1.66 mph</span></div>
+    <div class="or"><span class="ok">Fix Time</span><span class="ov">4 May 2026 · 16:49:21</span></div>
+    <div class="or"><span class="ok">Location</span><span class="ov" style="font-size:9px;">Mumtaz Market · Adyala Link Rd · Rawalpindi</span></div>
+    <div style="margin-top:9px;display:flex;gap:7px;flex-wrap:wrap;">
+      <button class="btn btn-green" onclick="exportGeoFenceExcel()">📤 EXPORT EXCEL</button>
+      <button class="btn btn-blue" onclick="exportGeoFenceLog()">💾 SAVE LOG</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">📡 TOWERS IN GEOFENCE — FULL DETAIL</div>
+    <div class="ovx"><div id="geo-tbl-wrap" style="min-width:500px;"></div></div>
+  </div>
+</div>
+
+<!-- ════════════════ AZIMUTH ════════════════ -->
+<div class="scr" id="s-azimuth">
+  <div class="card">
+    <div class="ct">🧭 AUTO AZIMUTH — ALL OPERATORS · LIVE DIRECTIONS</div>
+    <div class="comp-wrap">
+      <div class="comp">
+        <span class="cl cn">N</span><span class="cl cs">S</span>
+        <span class="cl ce">E</span><span class="cl cw">W</span>
+        <svg style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:145px;height:145px;" viewBox="-72 -72 144 144">
+          <circle cx="0" cy="0" r="68" fill="none" stroke="rgba(0,200,255,.07)" stroke-width="1"/>
+          <circle cx="0" cy="0" r="48" fill="none" stroke="rgba(0,200,255,.04)" stroke-width="1"/>
+          <circle cx="0" cy="0" r="28" fill="none" stroke="rgba(0,200,255,.04)" stroke-width="1"/>
+          <!-- Degree marks -->
+          <text x="-4" y="-54" fill="rgba(255,255,255,.2)" font-size="5" font-family="monospace">0°</text>
+          <text x="50" y="3" fill="rgba(255,255,255,.2)" font-size="5" font-family="monospace">90°</text>
+          <text x="-6" y="58" fill="rgba(255,255,255,.2)" font-size="5" font-family="monospace">180°</text>
+          <text x="-60" y="3" fill="rgba(255,255,255,.2)" font-size="5" font-family="monospace">270°</text>
+          <!-- UFONE ~120° SE -->
+          <path d="M0 0 L30 -52 L55 -27" fill="rgba(255,102,0,0.2)" stroke="var(--ufone)" stroke-width="1.2"/>
+          <text x="34" y="-43" fill="var(--ufone)" font-size="6.5" font-family="monospace">U·120°</text>
+          <!-- JAZZ ~340° NNW -->
+          <path d="M0 0 L-11 -60 L11 -60" fill="rgba(227,24,55,.17)" stroke="var(--jazz)" stroke-width="1.2"/>
+          <text x="-32" y="-53" fill="var(--jazz)" font-size="6.5" font-family="monospace">J·340°</text>
+          <!-- WARID ~280° W -->
+          <path d="M0 0 L-62 -8 L-62 8" fill="rgba(123,34,194,.14)" stroke="var(--warid)" stroke-width="1"/>
+          <text x="-66" y="-11" fill="var(--warid)" font-size="6" font-family="monospace">W·280°</text>
+          <!-- TELENOR ~10° N -->
+          <path d="M0 0 L-7 -62 L7 -62" fill="rgba(0,117,190,.12)" stroke="var(--tel)" stroke-width="1"/>
+          <text x="9" y="-54" fill="var(--tel)" font-size="6" font-family="monospace">T·10°</text>
+          <!-- ZONG ~50° NE -->
+          <path d="M0 0 L42 -47 L58 -22" fill="rgba(204,0,51,.1)" stroke="var(--zong)" stroke-width="1"/>
+          <text x="44" y="-40" fill="var(--zong)" font-size="6" font-family="monospace">Z·50°</text>
+          <!-- User heading needle 178° S -->
+          <line x1="0" y1="0" x2="1.5" y2="-58" stroke="var(--blue)" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="0" y1="0" x2="-1.5" y2="22" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="0" cy="0" r="5" fill="var(--blue)" opacity=".9"/>
+        </svg>
+      </div>
+    </div>
+    <div style="font-family:'Share Tech Mono';font-size:8.5px;color:var(--dim);text-align:center;line-height:2.1;">
+      <span style="color:var(--ufone);">● UFONE ~120° SE · ~76m</span> &nbsp; <span style="color:var(--jazz);">● JAZZ ~340° NNW</span><br>
+      <span style="color:var(--warid);">● WARID ~280° W · ~18km</span> &nbsp; <span style="color:var(--tel);">● TELENOR ~10° N · ~21km</span><br>
+      <span style="color:var(--zong);">● ZONG ~50° NE · ~27km</span><br>
+      <span style="color:var(--blue);">↑ Your heading: 178.2° (South)</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">📐 AUTO AZIMUTH TABLE — ALL TOWERS</div>
+    <div id="az-auto-tbl"></div>
+  </div>
+  <div class="card">
+    <div class="ct">🔢 MANUAL AZIMUTH CALCULATOR</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px;">
+      <div class="form-group"><div class="inp-label">YOUR BEARING (°)</div><input class="inp" id="az-bear" type="number" value="178.2"/></div>
+      <div class="form-group"><div class="inp-label">TOWER AZIMUTH (°)</div><input class="inp" id="az-tow" type="number" value="120"/></div>
+    </div>
+    <button class="btn btn-blue" onclick="calcAz()" style="width:100%;justify-content:center;">🧭 CALCULATE</button>
+    <div id="az-result" style="background:rgba(0,0,0,.4);border:1px solid var(--b);border-radius:7px;padding:10px;margin-top:8px;font-family:'Share Tech Mono';font-size:10px;color:var(--cyan);line-height:1.8;min-height:50px;"></div>
+  </div>
+</div>
+
+<!-- ════════════════ LIVE STATS ════════════════ -->
+<div class="scr" id="s-stats">
+  <div class="notif">📈 Live signal bars · All operators · Tap bar for tower details · CDR logging active</div>
+  <div class="sig-grid" id="sig-grid"></div>
+  <div class="card">
+    <div class="ct">📊 NETWORK AVAILABILITY</div>
+    <div class="avr"><div class="avl" style="color:var(--ufone);">UFONE 4G</div><div class="avt"><div class="avf" style="width:82%;background:var(--ufone);"></div></div><div class="avp" style="color:var(--ufone);">82%</div></div>
+    <div class="avr"><div class="avl" style="color:var(--jazz);">JAZZ 4G</div><div class="avt"><div class="avf" style="width:74%;background:var(--jazz);"></div></div><div class="avp" style="color:var(--jazz);">74%</div></div>
+    <div class="avr"><div class="avl" style="color:var(--warid);">WARID</div><div class="avt"><div class="avf" style="width:38%;background:var(--warid);"></div></div><div class="avp" style="color:var(--warid);">38%</div></div>
+    <div class="avr"><div class="avl" style="color:var(--zong);">ZONG</div><div class="avt"><div class="avf" style="width:22%;background:var(--zong);"></div></div><div class="avp" style="color:var(--zong);">22%</div></div>
+    <div class="avr"><div class="avl" style="color:var(--tel);">TELENOR</div><div class="avt"><div class="avf" style="width:15%;background:var(--tel);"></div></div><div class="avp" style="color:var(--tel);">15%</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">📝 CDR LOG BUFFER — <span id="cdr-buf-cnt">0</span> entries</div>
+    <div style="font-family:'Share Tech Mono';font-size:8.5px;color:var(--dim);margin-bottom:7px;">Auto-logging all tower visits · Use for CDR analysis</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn btn-green" onclick="exportCDRLogExcel()">📤 EXPORT EXCEL</button>
+      <button class="btn btn-blue" onclick="clearCDRLog()">🗑️ CLEAR</button>
+    </div>
+    <div id="cdr-log-buf" style="margin-top:9px;max-height:200px;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- ════════════════ CDR ANALYSIS ════════════════ -->
+<div class="scr" id="s-cdr">
+  <div id="cdr-alerts-area"></div>
+
+  <!-- Upload Section -->
+  <div class="card">
+    <div class="ct">📤 CDR FILE UPLOAD — ALL PK NETWORKS AUTO-DETECT</div>
+    <div class="dropzone" id="dz" onclick="document.getElementById('cdr-file').click()">
+      <div class="dz-icon">📂</div>
+      <div style="font-family:'Orbitron';font-size:9px;font-weight:700;color:var(--blue);margin-top:5px;">DROP CDR FILE HERE</div>
+      <div class="dz-txt">Supports: Jazz · Zong · Ufone · Telenor · Warid<br>CSV · TSV · TXT · XLSX formats</div>
+      <input type="file" id="cdr-file" accept=".csv,.txt,.tsv,.xlsx,.xls" onchange="loadCDRFile(this)">
+    </div>
+    <div id="cdr-parse-progress" style="display:none;margin-top:8px;">
+      <div class="progress-wrap"><div class="progress-fill" id="parse-bar" style="width:0%"></div></div>
+      <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);margin-top:3px;" id="parse-msg">Parsing...</div>
+    </div>
+  </div>
+
+  <!-- CDR Summary -->
+  <div id="cdr-summary" style="display:none;">
+    <div class="s4" id="cdr-stats"></div>
+
+    <!-- Pinpoint Result -->
+    <div id="pinpoint-result" style="display:none;">
+      <div class="pinpoint-box">
+        <div class="pp-title">🎯 SUSPECT LOCATION PINPOINTED</div>
+        <div class="pp-coords" id="pp-coords">--°N · --°E</div>
+        <div class="pp-addr" id="pp-addr">Analyzing...</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+          <div class="or"><span class="ok">Home Cell</span><span class="ov" id="pp-home">--</span></div>
+          <div class="or"><span class="ok">Work Cell</span><span class="ov" id="pp-work">--</span></div>
+          <div class="or"><span class="ok">Most Active</span><span class="ov" id="pp-active">--</span></div>
+          <div class="or"><span class="ok">Radius</span><span class="ov gd" id="pp-radius">--</span></div>
+        </div>
+        <div style="margin-top:6px;font-family:'Orbitron';font-size:7.5px;color:var(--dim);">CONFIDENCE LEVEL</div>
+        <div class="confidence-bar"><div class="conf-fill" id="conf-fill" style="width:0%"></div></div>
+        <div style="font-family:'Share Tech Mono';font-size:9px;color:var(--green);margin-top:3px;text-align:right;" id="conf-pct">0%</div>
+        <div style="margin-top:9px;display:flex;gap:7px;flex-wrap:wrap;">
+          <a id="pp-map-link" href="#" target="_blank" class="btn btn-blue">🗺️ OPEN IN MAP</a>
+          <button class="btn btn-red" onclick="pinpointOnAppMap()">📍 SHOW ON MAP</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Movement Pattern -->
+    <div class="card" id="cdr-movement" style="display:none;">
+      <div class="ct">🚶 MOVEMENT PATTERN</div>
+      <div id="mv-list"></div>
+    </div>
+
+    <!-- Cell Frequency -->
+    <div class="card" id="cdr-cells-card" style="display:none;">
+      <div class="ct">📡 CELL FREQUENCY ANALYSIS</div>
+      <canvas id="cell-chart" height="150"></canvas>
+    </div>
+
+    <!-- Associates Alert -->
+    <div id="assoc-alert-area"></div>
+
+    <!-- CDR Table -->
+    <div class="card">
+      <div class="ct">📋 CDR DATA — <span id="cdr-row-cnt">0</span> records · <span id="cdr-network-det">--</span></div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+        <button class="btn btn-green" onclick="exportCDRExcel()">📤 EXPORT EXCEL</button>
+        <button class="btn btn-blue" onclick="runAICDR()">🤖 AI ANALYSIS</button>
+        <button class="btn btn-purple" onclick="runPinpoint()">🎯 PINPOINT</button>
+        <input class="inp" id="cdr-filter" placeholder="Filter by number/cell/site..." oninput="filterCDR(this.value)" style="flex:1;max-width:200px;padding:5px 9px;font-size:9px;"/>
+      </div>
+      <div class="ovx" id="cdr-table-wrap" style="max-height:300px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- AI CDR Result -->
+    <div class="card" id="ai-cdr-result" style="display:none;">
+      <div class="ct">🤖 AI CDR PATTERN ANALYSIS</div>
+      <div id="ai-cdr-out" class="ai-live-panel" style="min-height:100px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ TARGETS ════════════════ -->
+<div class="scr" id="s-targets">
+  <div style="display:flex;gap:7px;margin-bottom:9px;flex-wrap:wrap;">
+    <button class="btn btn-red" onclick="showAddTarget()">➕ ADD TARGET</button>
+    <button class="btn btn-yel" onclick="showAddAssociate()">👥 ADD ASSOCIATE</button>
+    <button class="btn btn-blue" onclick="runAITargets()">🤖 AI ANALYSIS</button>
+    <div style="margin-left:auto;font-family:'Share Tech Mono';font-size:8.5px;color:var(--dim);align-self:center;"><span id="tgt-cnt">0</span> targets · <span id="assoc-cnt">0</span> associates</div>
+  </div>
+  <div id="alerts-area"></div>
+  <div id="targets-list"></div>
+  <div class="card" id="ai-tgt-panel" style="display:none;">
+    <div class="ct">🤖 AI TARGET ANALYSIS</div>
+    <div id="ai-tgt-out" style="background:#020a12;border:1px solid var(--b);border-radius:8px;padding:10px;font-family:'Share Tech Mono';font-size:9px;color:var(--cyan);line-height:1.8;min-height:80px;white-space:pre-wrap;"></div>
+  </div>
+</div>
+
+<!-- ════════════════ UPLOAD/DB ════════════════ -->
+<div class="scr" id="s-upload">
+  <div class="card">
+    <div class="ct">💾 DATABASE STATUS</div>
+    <div id="db-stats"></div>
+    <div style="margin-top:9px;display:flex;gap:7px;flex-wrap:wrap;">
+      <button class="btn btn-blue" onclick="exportAllDB()">📤 EXPORT ALL</button>
+      <button class="btn btn-red" onclick="clearDB()">🗑️ CLEAR DB</button>
+      <button class="btn btn-green" onclick="saveMemorySnapshot()">💾 SAVE SNAPSHOT</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">📤 MULTI-FILE UPLOAD</div>
+    <div class="dropzone" onclick="document.getElementById('multi-file').click()">
+      <div class="dz-icon">📁</div>
+      <div style="font-family:'Orbitron';font-size:9px;font-weight:700;color:var(--blue);margin-top:5px;">UPLOAD MULTIPLE CDR FILES</div>
+      <div class="dz-txt">All networks · All targets · Auto-detect format</div>
+      <input type="file" id="multi-file" accept=".csv,.txt,.tsv,.xlsx" multiple onchange="loadMultiFile(this)">
+    </div>
+    <div id="upload-list" style="margin-top:9px;"></div>
+  </div>
+  <div class="card">
+    <div class="ct">🧠 MEMORY BANK</div>
+    <div id="memory-bank"></div>
+  </div>
+</div>
+
+<!-- ════════════════ SEARCH / AI LIVE ════════════════ -->
+<div class="scr" id="s-search">
+  <!-- Search Bar -->
+  <div class="card">
+    <div class="ct">🔍 INTELLIGENCE SEARCH</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:9px;">
+      <input class="inp" id="main-search" placeholder="Mobile # / CID / LAC / IMEI / Site name..." oninput="globalSearch(this.value)"/>
+      <button class="btn btn-blue" onclick="globalSearch(document.getElementById('main-search').value)">SEARCH</button>
+    </div>
+    <div id="search-results" style="min-height:40px;"></div>
+  </div>
+
+  <!-- AI LIVE PANEL -->
+  <div class="card">
+    <div class="ct">🤖 AI LIVE INTELLIGENCE PANEL</div>
+    <div style="display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap;">
+      <button class="btn btn-purple" onclick="runAI('network')">📡 NETWORK</button>
+      <button class="btn btn-purple" onclick="runAI('cdr_pattern')">📊 CDR PATTERN</button>
+      <button class="btn btn-purple" onclick="runAI('location')">📍 LOCATION</button>
+      <button class="btn btn-purple" onclick="runAI('movement')">🚶 MOVEMENT</button>
+      <button class="btn btn-red" onclick="runAI('pinpoint')">🎯 PINPOINT</button>
+      <div class="tog on" id="ai-live-tog" onclick="toggleAILive(this)" style="align-self:center;"></div>
+      <span style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);align-self:center;">AUTO</span>
+    </div>
+    <div id="ai-live-panel" class="ai-live-panel">AI Intelligence Panel ready... Select analysis or enable AUTO mode.</div>
+  </div>
+
+  <!-- Direction Finding -->
+  <div class="card">
+    <div class="ct">🧭 DIRECTION FINDING — TARGET APPROACH</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px;">
+      <div class="form-group">
+        <div class="inp-label">SELECT TARGET</div>
+        <select class="inp" id="df-target" style="padding:7px 9px;">
+          <option value="">-- Select Target --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="inp-label">YOUR POSITION (auto)</div>
+        <div class="inp" id="df-mypos" style="color:var(--cyan);font-size:9px;">33.5540°N · 73.0531°E</div>
+      </div>
+    </div>
+    <button class="btn btn-red" onclick="startDF()" style="width:100%;justify-content:center;">🎯 START DIRECTION FINDING</button>
+    <div id="df-result" style="margin-top:9px;"></div>
+  </div>
+</div>
+
+<!-- ════════════════ LOG ════════════════ -->
+<div class="scr" id="s-log">
+  <div style="display:flex;gap:7px;margin-bottom:9px;flex-wrap:wrap;align-items:center;">
+    <button class="btn btn-green" onclick="exportLogExcel()">📤 EXPORT EXCEL</button>
+    <button class="btn btn-blue" onclick="exportLogCSV()">📋 CSV</button>
+    <button class="btn btn-red" onclick="clearLog()">🗑️ CLEAR</button>
+    <div style="margin-left:auto;font-family:'Share Tech Mono';font-size:8.5px;color:var(--dim);"><span id="log-cnt">0</span> entries</div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="ovx">
+      <div style="min-width:620px;">
+        <div class="lhd" style="grid-template-columns:50px 55px 1fr 50px 50px 60px 65px 55px;">
+          <div>TIME</div><div>OPERATOR</div><div>CID/eNB</div><div>LAC</div><div>RSRP</div><div>BAND</div><div>SITE/LOCATION</div><div>GPS</div>
+        </div>
+        <div id="log-body"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end #main -->
+
+<!-- FOOTER -->
+<div id="footer">NEXUS SIGINT · FAISAL MALIK © 2026 · ALL RIGHTS RESERVED · PAKISTAN INTELLIGENCE SYSTEM v4.0</div>
+
+<!-- ADD TARGET MODAL -->
+<div class="modal" id="modal-target">
+  <div class="modal-box">
+    <div class="modal-title">➕ ADD TARGET / ASSOCIATE</div>
+    <div class="form-group"><div class="inp-label">NAME / ALIAS</div><input class="inp" id="tgt-name" placeholder="e.g. Suspect Alpha"/></div>
+    <div class="form-group"><div class="inp-label">MOBILE NUMBER(S) — comma separated</div><input class="inp" id="tgt-nums" placeholder="e.g. 923315322502, 923085428297"/></div>
+    <div class="form-group"><div class="inp-label">CNIC (optional)</div><input class="inp" id="tgt-cnic" placeholder="e.g. 3740534784927"/></div>
+    <div class="form-group"><div class="inp-label">IMEI (optional)</div><input class="inp" id="tgt-imei" placeholder="14-digit IMEI"/></div>
+    <div class="form-group"><div class="inp-label">NETWORK(S)</div>
+      <select class="inp" id="tgt-network" multiple style="height:80px;">
+        <option value="jazz" selected>Jazz</option>
+        <option value="ufone">Ufone</option>
+        <option value="zong">Zong</option>
+        <option value="telenor">Telenor</option>
+        <option value="warid">Warid</option>
+      </select>
+    </div>
+    <div class="form-group"><div class="inp-label">STATUS</div>
+      <select class="inp" id="tgt-stat">
+        <option value="active">🔴 ACTIVE TARGET</option>
+        <option value="watch">🟡 WATCH LIST</option>
+        <option value="associate">👥 ASSOCIATE</option>
+        <option value="cleared">✅ CLEARED</option>
+      </select>
+    </div>
+    <div class="form-group"><div class="inp-label">NOTES</div><textarea class="inp" id="tgt-notes" rows="2" placeholder="Additional info..."></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-green" onclick="saveTarget()" style="flex:1;justify-content:center;">💾 SAVE</button>
+      <button class="btn btn-red" onclick="closeModal('modal-target')" style="flex:1;justify-content:center;">✕ CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOWER DETAIL MODAL -->
+<div class="modal" id="modal-tower">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-tower-title">TOWER DETAILS</div>
+    <div id="modal-tower-content"></div>
+    <button class="btn btn-blue" onclick="closeModal('modal-tower')" style="width:100%;justify-content:center;margin-top:12px;">CLOSE</button>
+  </div>
+</div>
+<script>
+// ════════════════════════════════════════════════════════════════
+// NEXUS SIGINT v4.0 — COMPLETE INTELLIGENCE ENGINE
+// Faisal Malik © 2026 — All Rights Reserved
+// ════════════════════════════════════════════════════════════════
+
+// ══ GLOBAL STATE ══
+const DB = {
+  targets: [],
+  associates: [],
+  cdrFiles: [],
+  cdrRows: [],
+  cellLog: [],
+  liveLog: [],
+  memoryBank: {},
+  uploadedFiles: []
+};
+
+let leafletMap = null;
+let mapMarkers = [];
+let mapSectorLayers = [];
+let cdrParsed = [];
+let cdrNetworkFormat = '';
+let cellChart = null;
+let aiLiveTimer = null;
+let aiLiveActive = false;
+let scanInterval = null;
+
+// ══ PAKISTAN TOWER DATABASE (seeded from real data) ══
+const TOWERS = [
+  {op:'ufone',  enb:'111315', sector:2, lac:18810,  cid:'111315:2', pci:337, earfcn:1276, band:'B3·1800+', type:'4G LTE-A', rsrp:-97,  lat:33.5535, lng:73.0522, az:120, dist:76,   site:'Adyala Link Road · Mumtaz Market', bw:'15+5MHz', serving:true,  sim:1},
+  {op:'ufone',  enb:'111315', sector:1, lac:18810,  cid:'111315:1', pci:336, earfcn:1276, band:'B3·1800',  type:'4G LTE',   rsrp:-104, lat:33.5536, lng:73.0525, az:60,  dist:150,  site:'Adyala Link Rd (Sec1)',            bw:'15MHz',   serving:false, sim:1},
+  {op:'ufone',  enb:'41293',  sector:1, lac:18810,  cid:'41293',    pci:0,   earfcn:731,  band:'B8·900',   type:'2G GSM',   rsrp:-88,  lat:33.6225, lng:73.0368, az:120, dist:2000, site:'Boring Rd · Dhok Matkal',          bw:'—',       serving:false, sim:1},
+  {op:'jazz',   enb:'111509', sector:7, lac:60604,  cid:'111509:7', pci:99,  earfcn:1850, band:'B3·1800+', type:'4G LTE',   rsrp:-107, lat:33.5545, lng:73.0538, az:340, dist:200,  site:'Ali Town · Adyala Rd',             bw:'20MHz',   serving:true,  sim:2},
+  {op:'jazz',   enb:'110598', sector:23,lac:60604,  cid:'110598:23',pci:47,  earfcn:3748, band:'B8·900',   type:'4G LTE',   rsrp:-96,  lat:33.5525, lng:73.0530, az:200, dist:180,  site:'Ali Town South',                   bw:'15MHz',   serving:false, sim:0},
+  {op:'jazz',   enb:'437',    sector:1, lac:60604,  cid:'437:1',    pci:437, earfcn:250,  band:'B1·2100',  type:'3G WCDMA', rsrp:-98,  lat:33.5540, lng:73.0500, az:270, dist:300,  site:'Adyala Rd West',                   bw:'5MHz',    serving:false, sim:0},
+  {op:'jazz',   enb:'440',    sector:1, lac:60604,  cid:'440:1',    pci:440, earfcn:3748, band:'B8·900',   type:'4G LTE',   rsrp:-97,  lat:33.5548, lng:73.0515, az:310, dist:350,  site:'Ali Town NW',                      bw:'10MHz',   serving:false, sim:0},
+  {op:'warid',  enb:'50607',  sector:32,lac:50607,  cid:'111585:32',pci:0,   earfcn:1850, band:'B3·1800',  type:'4G LTE',   rsrp:-101, lat:33.5540, lng:72.9200, az:280, dist:18000,site:'Rawalpindi West Area',             bw:'10MHz',   serving:false, sim:0},
+  {op:'warid',  enb:'50607',  sector:31,lac:50607,  cid:'111585:31',pci:0,   earfcn:1850, band:'B3·1800',  type:'4G LTE',   rsrp:-108, lat:33.5530, lng:72.9150, az:260, dist:18500,site:'Rawalpindi West (Sec31)',          bw:'10MHz',   serving:false, sim:0},
+  {op:'zong',   enb:'52228',  sector:41,lac:52228,  cid:'13019:41', pci:0,   earfcn:56,   band:'B8·900',   type:'2G GSM',   rsrp:-110, lat:33.6480, lng:73.1720, az:50,  dist:27000,site:'ICHS Town · Punjab',              bw:'—',       serving:false, sim:0},
+  {op:'zong',   enb:'E792C0', sector:1, lac:52228,  cid:'E792C0B2', pci:0,   earfcn:1850, band:'B3·1800',  type:'4G LTE',   rsrp:-115, lat:33.6293, lng:73.0402, az:20,  dist:8500, site:'Pirwadahi · Rawalpindi',           bw:'20MHz',   serving:false, sim:0},
+  {op:'telenor',enb:'58806',  sector:24,lac:58806,  cid:'13623:24', pci:0,   earfcn:53,   band:'B8·900',   type:'2G GSM',   rsrp:-109, lat:33.6250, lng:73.0360, az:10,  dist:21000,site:'H-13 Islamabad',                  bw:'—',       serving:false, sim:0},
+  {op:'telenor',enb:'58806',  sector:33,lac:58806,  cid:'32064:33', pci:0,   earfcn:54,   band:'B8·900',   type:'2G GSM',   rsrp:-106, lat:33.5910, lng:73.0410, az:30,  dist:4100, site:'Rawalpindi North Area',            bw:'—',       serving:false, sim:0},
+  {op:'telenor',enb:'58806',  sector:36,lac:58806,  cid:'35874:36', pci:0,   earfcn:58,   band:'B8·900',   type:'2G GSM',   rsrp:-113, lat:33.5400, lng:73.1700, az:350, dist:18000,site:'Rawalpindi East',                 bw:'—',       serving:false, sim:0},
+  {op:'telenor',enb:'2E8239', sector:1, lac:58806,  cid:'2E823916', pci:0,   earfcn:3800, band:'B3·1800',  type:'4G LTE',   rsrp:-118, lat:34.0060, lng:71.5980, az:0,   dist:85000,site:'Near Circular Rd · Peshawar',      bw:'20MHz',   serving:false, sim:0},
+];
+
+// ══ OPERATOR CONFIG ══
+const OPS = {
+  jazz:    {color:'#e31837', name:'Jazz',    mcc:'410', mnc:'01'},
+  warid:   {color:'#7b22c2', name:'Warid',   mcc:'410', mnc:'07'},
+  ufone:   {color:'#ff6600', name:'Ufone',   mcc:'410', mnc:'03'},
+  zong:    {color:'#cc0033', name:'Zong',    mcc:'410', mnc:'08'},
+  telenor: {color:'#0075be', name:'Telenor', mcc:'410', mnc:'06'}
+};
+
+// ══ CDR NETWORK FORMATS ══
+const CDR_FORMATS = {
+  ufone_v1: {
+    detect: h => h.includes('MSISDN') && h.includes('LAC_ID') && h.includes('CALL_TYPE'),
+    fields: {aparty:'MSISDN', bparty:'BNUMBER', datetime:'STRT_TM', calltype:'CALL_TYPE', lac:'LAC_ID', cellid:'CELL_ID', imei:'IMEI', site:'SITE_ADDRESS', lat:'LAT', lng:'LNG', duration:'MINS'},
+    network: 'Ufone', hexcell: false
+  },
+  ufone_v2: {
+    detect: h => h.includes('MSISDN') && h.includes('Lac_Id') && h.includes('Cell_SITE_ID'),
+    fields: {aparty:'MSISDN', bparty:'CALL_DIALED_NUM', datetime:'CALL_START_DT_TM', calltype:'CALL_TYPE', lac:'Lac_Id', cellid:'Cell_SITE_ID', imei:'IMEI', imsi:'IMSI', site:'location', lat:'lat', lng:'longitude'},
+    network: 'Ufone', hexcell: false
+  },
+  jazz: {
+    detect: h => h.includes('A Number') || h.includes('A_Number') || (h.includes('IMEI') && h.includes('Cell Sector')),
+    fields: {aparty:'A Number', bparty:'B Number', datetime:'Start Time', calltype:'Type', lac:'Cell Id', cellid:'Cell Id', sector:'Cell Sector', imei:'IMEI', imsi:'IMSI', lat:'Latitude', lng:'Longitude', site:'Location', duration:'Duration'},
+    network: 'Jazz', hexcell: false
+  },
+  zong: {
+    detect: h => h.includes('Aparty') && h.includes('BParty') && (h.includes('SiteLocation') || h.includes('cellid')),
+    fields: {aparty:'Aparty', bparty:'BParty', datetime:'Datetime', calltype:'CallType', lac:'NodeID', cellid:'cellid', imei:'Imei', imsi:'Imsi', site:'SiteLocation', duration:'Duration'},
+    network: 'Zong', hexcell: true
+  },
+  telenor: {
+    detect: h => h.includes('Aparty') && h.includes('BParty') && h.includes('Datetime') && !h.includes('Imsi'.toLowerCase()),
+    fields: {aparty:'Aparty', bparty:'BParty', datetime:'Datetime', calltype:'CallType', lac:'NodeID', cellid:'cellid', imei:'Imei', imsi:'Imsi', site:'SiteLocation', duration:'Duration'},
+    network: 'Telenor', hexcell: true
+  },
+  warid: {
+    detect: h => (h.includes('A-Party') || h.includes('AParty')) && h.includes('B-Party') && (h.includes('LAC') || h.includes('Cell ID')),
+    fields: {aparty:'A-Party', bparty:'B-Party', datetime:'Timestamp', calltype:'Activity&Type', lac:'LAC/TAC', cellid:'Cell ID', imei:'IMEI', site:'Location', lat:'Latitude', lng:'Longitude', duration:'Duration/Vol'},
+    network: 'Warid', hexcell: false
+  }
+};
+
+// MY POSITION
+let myLat = 33.5540, myLng = 73.0531;
+let measureCnt = 0;
+let liveLogArr = [];
+
+// ════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════
+const SP_MSGS = [
+  'INITIALIZING BASEBAND ENGINE...',
+  'LOADING PK OPERATOR DATABASE...',
+  'CONNECTING TO TOWER GRID...',
+  'LOADING CDR ANALYSIS ENGINE...',
+  'STARTING AI INTELLIGENCE...',
+  'LOADING MAP ENGINE...',
+  'READY ✓'
+];
+let spIdx = 0;
+const spEl = document.getElementById('sp-msg');
+const spBar = document.querySelector('.spprog');
+const spFill = document.querySelector('.spfill');
+const spTimer = setInterval(() => {
+  if (spIdx < SP_MSGS.length) {
+    spEl.textContent = SP_MSGS[spIdx++];
+  } else {
+    clearInterval(spTimer);
+  }
+}, 330);
+setTimeout(() => document.getElementById('splash').classList.add('gone'), 2600);
+
+// ════════════════════════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════════════════════════
+function tick() {
+  const d = new Date();
+  const t = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
+  document.getElementById('clk').textContent = t;
+  const dn = document.getElementById('ov-time'); if(dn) dn.textContent = t;
+  const gn = document.getElementById('g-time'); if(gn) gn.textContent = t;
+}
+tick(); setInterval(tick, 1000);
+
+// ════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════════
+function go(id, tab) {
+  document.querySelectorAll('.scr').forEach(s => s.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('s-' + id).classList.add('on');
+  tab.classList.add('on');
+  window.scrollTo && window.scrollTo(0, 0);
+  if (id === 'map') setTimeout(initMap, 100);
+  if (id === 'gauge') buildGauges();
+  if (id === 'stats') buildSigGrid();
+  if (id === 'azimuth') buildAzTbl();
+  if (id === 'geofence') buildGeoTable();
+  if (id === 'log') renderLog();
+  if (id === 'upload') updateDBStats();
+  if (id === 'targets') renderTargets();
+}
+
+// ════════════════════════════════════════════════════════════════
+// MAP ENGINE — LEAFLET
+// ════════════════════════════════════════════════════════════════
+function initMap() {
+  if (leafletMap) { leafletMap.invalidateSize(); return; }
+  const mapEl = document.getElementById('leaflet-map');
+  if (!mapEl) return;
+  leafletMap = L.map('leaflet-map', { zoomControl: true }).setView([myLat, myLng], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OSM contributors', maxZoom: 19
+  }).addTo(leafletMap);
+
+  // My position marker
+  const myIcon = L.divIcon({
+    className: '', iconSize: [20, 20], iconAnchor: [10, 10],
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:#00c8ff;box-shadow:0 0 15px #00c8ff;border:2px solid #fff;"></div>`
+  });
+  L.marker([myLat, myLng], { icon: myIcon })
+    .addTo(leafletMap)
+    .bindPopup('<b style="color:#00c8ff">YOU ARE HERE</b><br>33.5540°N · 73.0531°E<br>Ali Town · Adyala Link Rd')
+    .openPopup();
+
+  mapAllTowers();
+}
+
+function getTowerIcon(op, serving) {
+  const c = OPS[op] ? OPS[op].color : '#fff';
+  const s = serving ? 36 : 26;
+  return L.divIcon({
+    className: '',
+    iconSize: [s, s],
+    iconAnchor: [s/2, s/2],
+    html: `<div style="width:${s}px;height:${s}px;border-radius:50%;background:${c};
+      box-shadow:0 0 ${serving?14:8}px ${c};border:${serving?3:2}px solid #fff;
+      display:flex;align-items:center;justify-content:center;
+      font-size:${serving?12:9}px;font-weight:900;color:#fff;">
+      ${OPS[op]?OPS[op].name[0]:'?'}</div>`
+  });
+}
+
+function mapAllTowers() {
+  if (!leafletMap) return;
+  mapMarkers.forEach(m => leafletMap.removeLayer(m));
+  mapMarkers = [];
+  TOWERS.forEach(t => {
+    if (!t.lat || !t.lng) return;
+    const m = L.marker([t.lat, t.lng], { icon: getTowerIcon(t.op, t.serving) })
+      .addTo(leafletMap)
+      .on('click', () => showTowerOnMap(t));
+    mapMarkers.push(m);
+  });
+  document.getElementById('map-status').textContent = TOWERS.length + ' towers loaded';
+}
+
+function mapSectors() {
+  if (!leafletMap) return;
+  mapSectorLayers.forEach(l => leafletMap.removeLayer(l));
+  mapSectorLayers = [];
+  TOWERS.forEach(t => {
+    if (!t.lat || !t.lng || t.az === undefined) return;
+    const c = OPS[t.op] ? OPS[t.op].color : '#fff';
+    const r = t.serving ? 600 : 300;
+    const spread = 60;
+    const startAng = t.az - spread/2;
+    const endAng = t.az + spread/2;
+    const pts = [[t.lat, t.lng]];
+    for (let a = startAng; a <= endAng; a += 5) {
+      const rad = (a - 90) * Math.PI / 180;
+      const dlat = (r / 111000) * Math.cos(rad);
+      const dlng = (r / (111000 * Math.cos(t.lat * Math.PI / 180))) * Math.sin(rad);
+      pts.push([t.lat + dlat, t.lng + dlng]);
+    }
+    pts.push([t.lat, t.lng]);
+    const poly = L.polygon(pts, {
+      color: c, fillColor: c, fillOpacity: 0.15, weight: 1.5, opacity: 0.7
+    }).addTo(leafletMap);
+    mapSectorLayers.push(poly);
+  });
+  document.getElementById('map-status').textContent = 'Sectors drawn';
+}
+
+function mapCenter() {
+  if (leafletMap) leafletMap.setView([myLat, myLng], 16);
+}
+
+function filterMapOp() {
+  const op = document.getElementById('map-op-filter').value;
+  mapMarkers.forEach(m => leafletMap.removeLayer(m));
+  mapMarkers = [];
+  const filtered = op === 'all' ? TOWERS : TOWERS.filter(t => t.op === op);
+  filtered.forEach(t => {
+    if (!t.lat || !t.lng) return;
+    const m = L.marker([t.lat, t.lng], { icon: getTowerIcon(t.op, t.serving) })
+      .addTo(leafletMap)
+      .on('click', () => showTowerOnMap(t));
+    mapMarkers.push(m);
+  });
+}
+
+function mapCDRPoints() {
+  if (!leafletMap || !cdrParsed.length) {
+    document.getElementById('map-status').textContent = 'No CDR data loaded';
+    return;
+  }
+  const points = [];
+  cdrParsed.forEach(r => {
+    if (r.lat && r.lng && !isNaN(r.lat) && !isNaN(r.lng)) {
+      const lat = parseFloat(r.lat), lng = parseFloat(r.lng);
+      if (lat > 20 && lat < 40 && lng > 60 && lng < 80) points.push([lat, lng, r]);
+    }
+  });
+  points.forEach(([lat, lng, r]) => {
+    const c = '#ff4400';
+    const m = L.circleMarker([lat, lng], {
+      radius: 5, color: c, fillColor: c, fillOpacity: 0.7, weight: 1
+    }).addTo(leafletMap)
+      .bindPopup(`<b>${r.aparty || '--'}</b><br>${r.site || ''}<br>${r.datetime || ''}`);
+    mapMarkers.push(m);
+  });
+  document.getElementById('map-status').textContent = points.length + ' CDR points shown';
+}
+
+function showTowerOnMap(t) {
+  const c = OPS[t.op] ? OPS[t.op].color : '#fff';
+  const info = document.getElementById('map-info-content');
+  info.innerHTML = `
+    <div style="font-family:'Orbitron';font-size:9px;font-weight:700;color:${c};letter-spacing:2px;margin-bottom:6px;">
+      ${OPS[t.op]?OPS[t.op].name:'?'} · ${t.type} · ${t.serving?'★ SERVING':'NEIGHBOR'}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-family:'Share Tech Mono';font-size:9px;">
+      <span style="color:var(--dim);">eNB/CID:</span><span style="color:${c};">${t.enb} · Sector ${t.sector}</span>
+      <span style="color:var(--dim);">CID:</span><span>${t.cid}</span>
+      <span style="color:var(--dim);">LAC/TAC:</span><span>${t.lac}</span>
+      <span style="color:var(--dim);">Band:</span><span>${t.band}</span>
+      <span style="color:var(--dim);">RSRP:</span><span class="${rsrpClass(t.rsrp)}">${t.rsrp} dBm</span>
+      <span style="color:var(--dim);">Azimuth:</span><span style="color:var(--yel);">${t.az}°</span>
+      <span style="color:var(--dim);">Distance:</span><span style="color:#28ff00;">${t.dist >= 1000 ? (t.dist/1000).toFixed(1)+'km' : t.dist+'m'}</span>
+      <span style="color:var(--dim);">BW:</span><span>${t.bw}</span>
+    </div>
+    <div style="font-family:'Share Tech Mono';font-size:8.5px;color:var(--blue);margin-top:5px;">📍 ${t.site}</div>
+    <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">GPS: ${t.lat}°N · ${t.lng}°E</div>
+    <a href="https://maps.google.com/?q=${t.lat},${t.lng}" target="_blank"
+      style="display:inline-block;margin-top:6px;padding:3px 10px;background:rgba(0,200,255,.15);border:1px solid var(--blue);border-radius:6px;color:var(--blue);font-family:'Orbitron';font-size:7.5px;text-decoration:none;font-weight:700;">🗺️ GOOGLE MAPS</a>`;
+  document.getElementById('map-info').style.display = 'block';
+}
+
+// ════════════════════════════════════════════════════════════════
+// GAUGE ENGINE — 5 SIMs Forensic
+// ════════════════════════════════════════════════════════════════
+const SIM_CONFIGS = [
+  {id:'sim1', op:'ufone', label:'SIM1·UFONE', rsrp:-97,  type:'4G LTE-A', enb:'111315-2', tac:18810, pci:337, earfcn:1276, band:'B3·1800+', bw:'15+5MHz', ta:2, site:'Adyala Link Rd', dist:'~76m', az:'120°SE'},
+  {id:'sim2', op:'jazz',  label:'SIM2·JAZZ',  rsrp:-107, type:'4G LTE',   enb:'111509-7', tac:60604, pci:99,  earfcn:1850, band:'B3·1800+', bw:'20MHz',   ta:0, site:'Ali Town',      dist:'—',     az:'340°NNW'},
+  {id:'sim3', op:'warid', label:'SIM3·WARID', rsrp:-101, type:'4G LTE',   enb:'50607-32', tac:50607, pci:0,   earfcn:1850, band:'B3·1800',  bw:'10MHz',   ta:0, site:'Rwp West',     dist:'~18km', az:'280°W'},
+  {id:'sim4', op:'zong',  label:'SIM4·ZONG',  rsrp:-110, type:'2G GSM',   enb:'52228-41', tac:52228, pci:0,   earfcn:56,   band:'B8·900',   bw:'—',       ta:0, site:'ICHS Punjab',  dist:'~27km', az:'050°NE'},
+  {id:'sim5', op:'telenor',label:'SIM5·TEL',  rsrp:-109, type:'2G GSM',   enb:'58806-24', tac:58806, pci:0,   earfcn:53,   band:'B8·900',   bw:'—',       ta:0, site:'H-13 Isb',     dist:'~21km', az:'010°N'},
+];
+
+function rsrpClass(v) {
+  return v >= -80 ? 'ex' : v >= -90 ? 'gd' : v >= -100 ? 'md' : v >= -110 ? 'pr' : 'bd';
+}
+function rsrpLabel(v) {
+  return v >= -80 ? 'EXCELLENT' : v >= -90 ? 'GOOD' : v >= -100 ? 'MODERATE' : v >= -110 ? 'POOR' : 'VERY POOR';
+}
+function rsrpBarPct(v) {
+  return Math.max(5, Math.min(100, ((v + 140) / 90 * 100)));
+}
+function rsrpBarColor(v) {
+  return v >= -90 ? 'linear-gradient(90deg,#28ff00,#00c8ff)' :
+         v >= -100 ? 'linear-gradient(90deg,#ff7200,#ffc800)' :
+         'linear-gradient(90deg,#ff1a38,#ff7200)';
+}
+
+function buildGauges() {
+  const grid = document.getElementById('gauge-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  SIM_CONFIGS.forEach((s, i) => {
+    const c = OPS[s.op] ? OPS[s.op].color : '#fff';
+    const cls = rsrpClass(s.rsrp);
+    const pct = rsrpBarPct(s.rsrp);
+    grid.innerHTML += `
+    <div class="gb" style="border-top:2px solid ${c};" id="gb-${s.id}">
+      <div style="font-family:'Orbitron';font-size:7px;color:${c};letter-spacing:2px;margin-bottom:4px;">${s.label}</div>
+      <svg viewBox="0 0 100 58" style="width:100%;max-width:140px;">
+        <defs><linearGradient id="gg${i}" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#ff1a38"/>
+          <stop offset="50%" stop-color="#ffc800"/>
+          <stop offset="100%" stop-color="#28ff00"/>
+        </linearGradient></defs>
+        <path d="M8 55 A45 45 0 0 1 92 55" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5" stroke-linecap="round"/>
+        <path d="M8 55 A45 45 0 0 1 92 55" fill="none" stroke="url(#gg${i})" stroke-width="5" stroke-linecap="round"
+          stroke-dasharray="143" stroke-dashoffset="${143 - (pct/100*143)}"/>
+        <line x1="50" y1="55" id="gn-${s.id}"
+          x2="${50 + 40*Math.cos(Math.PI*(1 - pct/100))}"
+          y2="${55 - 40*Math.sin(Math.PI*(1 - pct/100))}"
+          stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="50" cy="55" r="3.5" fill="#061520" stroke="${c}" stroke-width="1.5"/>
+      </svg>
+      <div class="gv ${cls}" id="gv-${s.id}">${s.rsrp}</div>
+      <div class="gu">RSRP dBm · ${rsrpLabel(s.rsrp)}</div>
+      <div class="gl">${s.type} · ${s.band} · ${s.bw}</div>
+      <div style="font-family:'Share Tech Mono';font-size:7.5px;color:var(--dim);margin-top:4px;">
+        eNB:${s.enb} · LAC:${s.tac}<br>
+        PCI:${s.pci} · EARFCN:${s.earfcn}<br>
+        TA:${s.ta}${s.ta>0?' (~'+s.ta*76+'m)':''} · AZ:${s.az}<br>
+        📍 ${s.site} · ${s.dist}
+      </div>
+    </div>`;
+  });
+}
+
+// Live gauge update
+setInterval(() => {
+  SIM_CONFIGS.forEach(s => {
+    const drift = (Math.random() * 8 - 4);
+    s.rsrp = Math.round(Math.max(-130, Math.min(-50, s.rsrp + drift)));
+    const el = document.getElementById('gv-' + s.id);
+    if (el) {
+      el.textContent = s.rsrp;
+      el.className = 'gv ' + rsrpClass(s.rsrp);
+    }
+  });
+}, 2500);
+
+// ════════════════════════════════════════════════════════════════
+// LIVE SIGNAL GRID
+// ════════════════════════════════════════════════════════════════
+function buildSigGrid() {
+  const grid = document.getElementById('sig-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  SIM_CONFIGS.forEach(s => {
+    const c = OPS[s.op] ? OPS[s.op].color : '#fff';
+    grid.innerHTML += `
+    <div class="sig-card" style="border-top:2px solid ${c};">
+      <div class="sig-op" style="color:${c};">${s.label}</div>
+      <div class="sig-bars" id="sigbars-${s.id}"></div>
+      <div class="sig-val ${rsrpClass(s.rsrp)}" id="sigval-${s.id}">${s.rsrp}</div>
+      <div class="sig-lbl">${s.type} · ${s.band}</div>
+      <div style="font-family:'Share Tech Mono';font-size:7px;color:var(--dim);margin-top:2px;">${s.site} · ${s.az}</div>
+    </div>`;
+  });
+  updateSigBars();
+}
+
+function updateSigBars() {
+  SIM_CONFIGS.forEach(s => {
+    const cont = document.getElementById('sigbars-' + s.id);
+    if (!cont) return;
+    const pct = rsrpBarPct(s.rsrp);
+    const bars = 8;
+    let html = '';
+    for (let i = 0; i < bars; i++) {
+      const filled = (i / bars * 100) < pct;
+      const h = 8 + i * 4;
+      const bc = filled ? (i < 2 ? '#ff1a38' : i < 5 ? '#ffc800' : '#28ff00') : 'rgba(255,255,255,.06)';
+      html += `<div class="sig-bar" style="height:${h}px;background:${bc};"></div>`;
+    }
+    cont.innerHTML = html;
+  });
+}
+
+setInterval(() => {
+  updateSigBars();
+  SIM_CONFIGS.forEach(s => {
+    const el = document.getElementById('sigval-' + s.id);
+    if (el) { el.textContent = s.rsrp; el.className = 'sig-val ' + rsrpClass(s.rsrp); }
+  });
+  logLiveEntry();
+}, 3000);
+
+function logLiveEntry() {
+  const t = TOWERS.find(t => t.serving && t.sim === 1);
+  if (!t) return;
+  const d = new Date();
+  const entry = {
+    time: d.toLocaleTimeString(),
+    date: d.toLocaleDateString(),
+    op: 'Ufone',
+    enb: t.enb,
+    cid: t.cid,
+    lac: t.lac,
+    rsrp: SIM_CONFIGS[0].rsrp,
+    band: t.band,
+    site: t.site,
+    gps: `${myLat},${myLng}`,
+    sector: t.sector,
+    az: t.az,
+    type: t.type
+  };
+  liveLogArr.unshift(entry);
+  if (liveLogArr.length > 500) liveLogArr.pop();
+  DB.cellLog.unshift(entry);
+  measureCnt++;
+  const el = document.getElementById('cdr-buf-cnt');
+  if (el) el.textContent = liveLogArr.length;
+  renderCDRLogBuf();
+}
+
+function renderCDRLogBuf() {
+  const el = document.getElementById('cdr-log-buf');
+  if (!el) return;
+  const recent = liveLogArr.slice(0, 20);
+  el.innerHTML = recent.map(e => `
+    <div style="display:grid;grid-template-columns:55px 55px 1fr 45px 40px;padding:4px 0;border-bottom:1px solid rgba(0,200,255,.04);font-family:'Share Tech Mono';font-size:8px;gap:4px;">
+      <span style="color:var(--dim);">${e.time}</span>
+      <span style="color:var(--ufone);">${e.op}</span>
+      <span>${e.cid}</span>
+      <span class="${rsrpClass(e.rsrp)}">${e.rsrp}</span>
+      <span style="color:var(--blue);font-size:7px;">${e.band}</span>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// GEOFENCE TABLE
+// ════════════════════════════════════════════════════════════════
+function buildGeoTable() {
+  const wrap = document.getElementById('geo-tbl-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = `
+    <div style="display:grid;grid-template-columns:65px 90px 42px 80px 60px 70px 55px;padding:5px 9px;
+      background:rgba(0,200,255,.07);font-family:'Orbitron';font-size:6.5px;font-weight:700;
+      color:var(--blue);letter-spacing:.6px;gap:3px;">
+      <div>OPERATOR</div><div>CID/eNB·SECTOR</div><div>RSRP</div>
+      <div>BAND</div><div>AZ·DIST</div><div>SITE NAME</div><div>GPS</div>
+    </div>` +
+  TOWERS.map(t => {
+    const c = OPS[t.op] ? OPS[t.op].color : '#fff';
+    const cls = rsrpClass(t.rsrp);
+    return `
+    <div style="display:grid;grid-template-columns:65px 90px 42px 80px 60px 70px 55px;
+      padding:6px 9px;border-bottom:1px solid rgba(0,200,255,.04);
+      font-family:'Share Tech Mono';font-size:8px;gap:3px;align-items:center;"
+      onclick='showTowerModal(${JSON.stringify(t).replace(/'/g,"&#39;")})'>
+      <div style="color:${c};font-weight:700;">${OPS[t.op]?OPS[t.op].name:'?'}</div>
+      <div style="font-size:7.5px;">${t.cid}·S${t.sector}</div>
+      <div class="${cls}">${t.rsrp}</div>
+      <div style="font-size:7px;">${t.type}<br><span style="color:var(--dim);">${t.band}</span></div>
+      <div style="font-size:7.5px;color:var(--yel);">${t.az}°<br><span style="color:#28ff00;">${t.dist>=1000?(t.dist/1000).toFixed(1)+'km':t.dist+'m'}</span></div>
+      <div style="font-size:7px;color:var(--cyan);">${t.site.substring(0,22)}</div>
+      <div style="font-size:7px;color:var(--dim);">${t.lat.toFixed(4)}<br>${t.lng.toFixed(4)}</div>
+    </div>`;
+  }).join('');
+}
+
+function showTowerModal(t) {
+  const c = OPS[t.op] ? OPS[t.op].color : '#fff';
+  document.getElementById('modal-tower-title').textContent = (OPS[t.op]?OPS[t.op].name:'') + ' · ' + t.type + ' · Sector ' + t.sector;
+  document.getElementById('modal-tower-content').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
+      <div class="or"><span class="ok">eNB</span><span class="ov" style="color:${c};">${t.enb}</span></div>
+      <div class="or"><span class="ok">Sector</span><span class="ov">${t.sector}</span></div>
+      <div class="or"><span class="ok">CID</span><span class="ov">${t.cid}</span></div>
+      <div class="or"><span class="ok">LAC/TAC</span><span class="ov">${t.lac}</span></div>
+      <div class="or"><span class="ok">PCI</span><span class="ov">${t.pci||'—'}</span></div>
+      <div class="or"><span class="ok">EARFCN</span><span class="ov">${t.earfcn}</span></div>
+      <div class="or"><span class="ok">Band</span><span class="ov">${t.band}</span></div>
+      <div class="or"><span class="ok">BW</span><span class="ov">${t.bw}</span></div>
+      <div class="or"><span class="ok">RSRP</span><span class="ov ${rsrpClass(t.rsrp)}">${t.rsrp} dBm</span></div>
+      <div class="or"><span class="ok">Type</span><span class="ov">${t.type}</span></div>
+      <div class="or"><span class="ok">Azimuth</span><span class="ov" style="color:var(--yel);">${t.az}°</span></div>
+      <div class="or"><span class="ok">Distance</span><span class="ov gd">${t.dist>=1000?(t.dist/1000).toFixed(1)+'km':t.dist+'m'}</span></div>
+    </div>
+    <div style="margin-top:8px;padding:8px;background:rgba(0,0,0,.3);border-radius:7px;">
+      <div style="font-family:'Share Tech Mono';font-size:9px;color:var(--cyan);">📍 ${t.site}</div>
+      <div style="font-family:'Share Tech Mono';font-size:8.5px;color:var(--dim);margin-top:3px;">${t.lat}°N · ${t.lng}°E</div>
+    </div>
+    <a href="https://maps.google.com/?q=${t.lat},${t.lng}" target="_blank"
+      style="display:block;text-align:center;margin-top:8px;padding:7px;background:rgba(0,200,255,.1);
+      border:1px solid var(--blue);border-radius:7px;color:var(--blue);font-family:'Orbitron';
+      font-size:8px;text-decoration:none;font-weight:700;">🗺️ OPEN IN GOOGLE MAPS</a>`;
+  document.getElementById('modal-tower').classList.add('show');
+}
+
+// ════════════════════════════════════════════════════════════════
+// AZIMUTH
+// ════════════════════════════════════════════════════════════════
+function buildAzTbl() {
+  const tbl = document.getElementById('az-auto-tbl');
+  if (!tbl) return;
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  tbl.innerHTML = TOWERS.map(t => {
+    const c = OPS[t.op] ? OPS[t.op].color : '#fff';
+    const relAng = ((t.az - 178.2) + 360) % 360;
+    const dirIdx = Math.round(relAng / 22.5) % 16;
+    const dir = dirs[dirIdx];
+    return `
+    <div style="padding:8px 0;border-bottom:1px solid rgba(0,200,255,.05);display:grid;grid-template-columns:65px 1fr;gap:6px;align-items:center;">
+      <div style="font-family:'Orbitron';font-size:8px;font-weight:700;color:${c};">${OPS[t.op]?OPS[t.op].name:'?'}</div>
+      <div>
+        <div style="font-family:'Share Tech Mono';font-size:9.5px;">${t.cid} · Sec${t.sector}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:3px;">
+          <span style="font-family:'Share Tech Mono';font-size:8px;color:var(--yel);">🧭 ${t.az}° (${dir} from tower)</span>
+          <span style="font-family:'Share Tech Mono';font-size:8px;color:var(--green);">📏 ${t.dist>=1000?(t.dist/1000).toFixed(1)+'km':t.dist+'m'}</span>
+          <span style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">📶 ${t.band}</span>
+          <span style="font-family:'Share Tech Mono';font-size:8px;color:var(--blue);">🔄 Rel:${relAng.toFixed(0)}° ${dirs[Math.round(((178.2-t.az)+360)%360/22.5)%16]}</span>
+          <span style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">📍 ${t.site}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function calcAz() {
+  const b = parseFloat(document.getElementById('az-bear').value) || 0;
+  const t = parseFloat(document.getElementById('az-tow').value) || 0;
+  const rel = ((t - b) + 360) % 360;
+  const dirs = ['AHEAD-N','FRONT-RIGHT NE','RIGHT-E','REAR-RIGHT SE','BEHIND-S','REAR-LEFT SW','LEFT-W','FRONT-LEFT NW'];
+  const dir = dirs[Math.round((rel / 45)) % 8];
+  const turn = rel > 180 ? 360 - rel : rel;
+  const side = rel > 180 ? 'LEFT' : 'RIGHT';
+  const ta = parseFloat(document.getElementById('az-bear').value) || 2;
+  document.getElementById('az-result').innerHTML = `
+    <span style="color:var(--dim);">Your bearing:    </span><span style="color:var(--cyan);">${b.toFixed(1)}°</span>\n
+    <span style="color:var(--dim);">Tower azimuth:   </span><span style="color:var(--yel);">${t.toFixed(1)}°</span>\n
+    <span style="color:var(--dim);">Relative angle:  </span><span style="color:var(--green);">${rel.toFixed(1)}°</span>\n
+    <span style="color:var(--dim);">Direction:       </span><span style="color:#28ff00;">${dir}</span>\n\n
+    <span style="color:var(--dim);">→ Turn </span><span style="color:var(--yel);">${turn.toFixed(0)}° ${side}</span><span style="color:var(--dim);"> from current heading</span>\n
+    <span style="color:var(--dim);">→ TA estimation: </span><span style="color:var(--green);">~${(ta*76).toFixed(0)}m from serving tower</span>`.replace(/\n/g,'<br>');
+}
+
+// ════════════════════════════════════════════════════════════════
+// CDR PARSING ENGINE — ALL 5 PK NETWORKS
+// ════════════════════════════════════════════════════════════════
+function loadCDRFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('cdr-parse-progress').style.display = 'block';
+  document.getElementById('parse-msg').textContent = 'Reading: ' + file.name;
+  document.getElementById('parse-bar').style.width = '10%';
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'xlsx' || ext === 'xls') {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wb = XLSX.read(e.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, {defval:''});
+      processCDRData(json, file.name);
+    };
+    reader.readAsBinaryString(file);
+  } else {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: r => processCDRData(r.data, file.name),
+      error: e => { document.getElementById('parse-msg').textContent = 'Error: ' + e.message; }
+    });
+  }
+}
+
+function detectNetworkFormat(headers) {
+  const h = headers.join(',').toLowerCase();
+  for (const [key, fmt] of Object.entries(CDR_FORMATS)) {
+    if (fmt.detect(headers.join(',') + ',' + h)) {
+      return {key, fmt};
+    }
+  }
+  return null;
+}
+
+function processCDRData(rows, filename) {
+  if (!rows || rows.length === 0) {
+    document.getElementById('parse-msg').textContent = 'No data found';
+    return;
+  }
+  document.getElementById('parse-bar').style.width = '30%';
+  document.getElementById('parse-msg').textContent = 'Detecting network format...';
+
+  const headers = Object.keys(rows[0]);
+  const detected = detectNetworkFormat(headers);
+
+  if (!detected) {
+    // Try generic parse
+    cdrNetworkFormat = 'Generic (unknown format)';
+    cdrParsed = rows.map(r => ({
+      aparty: r[headers[0]] || r['msisdn'] || r['MSISDN'] || '',
+      bparty: r[headers[1]] || '',
+      datetime: r[headers[2]] || r['datetime'] || '',
+      calltype: r[headers.find(h=>h.toLowerCase().includes('type'))||headers[3]] || '',
+      lac: r[headers.find(h=>h.toLowerCase().includes('lac'))||headers[5]] || '',
+      cellid: r[headers.find(h=>h.toLowerCase().includes('cell'))||headers[6]] || '',
+      lat: r[headers.find(h=>h.toLowerCase().includes('lat'))||''] || '',
+      lng: r[headers.find(h=>h.toLowerCase().includes('lon'))||headers.find(h=>h.toLowerCase().includes('lng'))||''] || '',
+      site: r[headers.find(h=>h.toLowerCase().includes('site')||h.toLowerCase().includes('loc'))||''] || '',
+      raw: r
+    }));
+  } else {
+    cdrNetworkFormat = detected.fmt.network;
+    const f = detected.fmt.fields;
+    cdrParsed = rows.map(r => {
+      let lat = '', lng = '', site = r[f.site] || '';
+      // Zong/Telenor: SiteLocation has "name|lat|lng"
+      if (detected.fmt.hexcell && site.includes('|')) {
+        const parts = site.split('|');
+        site = parts[0];
+        lat = parts[1] || '';
+        lng = parts[2] || '';
+      } else {
+        lat = r[f.lat] || r['Latitude'] || r['lat'] || '';
+        lng = r[f.lng] || r['Longitude'] || r['lng'] || r['Longitude '] || '';
+      }
+      let cellid = r[f.cellid] || '';
+      // Hex cell ID conversion
+      if (detected.fmt.hexcell && cellid && isNaN(cellid)) {
+        cellid = parseInt(cellid, 16).toString() + ' (0x' + cellid + ')';
+      }
+      return {
+        aparty: r[f.aparty] || '',
+        bparty: r[f.bparty] || '',
+        datetime: r[f.datetime] || '',
+        calltype: r[f.calltype] || '',
+        lac: r[f.lac] || '',
+        cellid,
+        sector: r[f.sector] || '',
+        imei: r[f.imei] || '',
+        imsi: r[f.imsi] || '',
+        lat: lat.toString().trim(),
+        lng: lng.toString().trim(),
+        site,
+        duration: r[f.duration] || '',
+        network: detected.fmt.network,
+        raw: r
+      };
+    });
+  }
+
+  DB.cdrFiles.push({name: filename, rows: cdrParsed.length, network: cdrNetworkFormat, time: new Date().toLocaleTimeString()});
+  DB.cdrRows.push(...cdrParsed);
+
+  document.getElementById('parse-bar').style.width = '100%';
+  document.getElementById('parse-msg').textContent = `✓ ${cdrParsed.length} records · ${cdrNetworkFormat}`;
+
+  setTimeout(() => {
+    document.getElementById('cdr-parse-progress').style.display = 'none';
+    document.getElementById('cdr-summary').style.display = 'block';
+    renderCDRSummary();
+    renderCDRTable();
+    runPinpoint();
+    checkAssociateAlerts();
+    addLogEntry({ time: new Date().toLocaleTimeString(), date: new Date().toLocaleDateString(), op: cdrNetworkFormat, enb: '—', cid: 'CDR LOADED', lac: '—', rsrp: 0, band: cdrNetworkFormat, site: filename, gps: '', sector: '—', az: '—', type: 'CDR' });
+  }, 500);
+}
+
+function renderCDRSummary() {
+  const stats = document.getElementById('cdr-stats');
+  const uniqueParties = new Set(cdrParsed.map(r => r.aparty).filter(Boolean)).size;
+  const uniqueCells = new Set(cdrParsed.map(r => r.cellid).filter(Boolean)).size;
+  const withLocation = cdrParsed.filter(r => r.lat && r.lng && r.lat !== '0' && r.lng !== '0').length;
+  stats.innerHTML = `
+    <div class="sc"><div class="sv">${cdrParsed.length}</div><div class="sk">TOTAL RECORDS</div></div>
+    <div class="sc"><div class="sv">${uniqueParties}</div><div class="sk">UNIQUE NUMBERS</div></div>
+    <div class="sc"><div class="sv">${uniqueCells}</div><div class="sk">UNIQUE CELLS</div></div>
+    <div class="sc"><div class="sv">${withLocation}</div><div class="sk">WITH LOCATION</div></div>`;
+
+  document.getElementById('cdr-row-cnt').textContent = cdrParsed.length;
+  document.getElementById('cdr-network-det').textContent = cdrNetworkFormat;
+
+  // Cell frequency chart
+  const cellFreq = {};
+  cdrParsed.forEach(r => { if (r.cellid) cellFreq[r.cellid] = (cellFreq[r.cellid]||0)+1; });
+  const sorted = Object.entries(cellFreq).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  const chartCard = document.getElementById('cdr-cells-card');
+  chartCard.style.display = 'block';
+  if (cellChart) cellChart.destroy();
+  const ctx = document.getElementById('cell-chart').getContext('2d');
+  cellChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(x => x[0].substring(0,12)),
+      datasets: [{
+        label: 'CDR Hits',
+        data: sorted.map(x => x[1]),
+        backgroundColor: sorted.map((_, i) => `hsl(${200 + i*15},80%,55%)`),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#c0e8ff', font: { family: 'Share Tech Mono', size: 9 } } } },
+      scales: {
+        x: { ticks: { color: '#285070', font: { size: 8 } }, grid: { color: 'rgba(0,200,255,.06)' } },
+        y: { ticks: { color: '#285070' }, grid: { color: 'rgba(0,200,255,.06)' } }
+      }
+    }
+  });
+
+  // Movement pattern
+  buildMovementPattern();
+}
+
+function buildMovementPattern() {
+  const mvCard = document.getElementById('cdr-movement');
+  const mvList = document.getElementById('mv-list');
+  if (!mvCard || !mvList) return;
+  mvCard.style.display = 'block';
+  const sorted = [...cdrParsed].sort((a,b) => new Date(a.datetime) - new Date(b.datetime));
+  const movements = [];
+  let lastCell = '';
+  sorted.forEach(r => {
+    if (r.cellid && r.cellid !== lastCell) {
+      movements.push(r);
+      lastCell = r.cellid;
+    }
+  });
+  mvList.innerHTML = movements.slice(0,20).map((r,i) => `
+    <div class="mv-item">
+      <div class="mv-dot" style="background:${i===0?'#28ff00':i===movements.length-1?'#ff1a38':'#00c8ff'};"></div>
+      <div class="mv-txt">
+        <span style="color:var(--cyan);">${r.cellid}</span>
+        <span style="color:var(--dim);"> · ${r.site || 'Unknown site'}</span>
+        ${r.lat && r.lng ? `<br><span style="color:var(--blue);">📍 ${parseFloat(r.lat).toFixed(4)}°N · ${parseFloat(r.lng).toFixed(4)}°E</span>` : ''}
+        ${r.bparty ? `<br><span style="color:var(--yel);">📞 → ${r.bparty}</span>` : ''}
+      </div>
+      <div class="mv-time">${r.datetime || '--'}</div>
+    </div>`).join('');
+}
+
+function renderCDRTable(filter = '') {
+  const wrap = document.getElementById('cdr-table-wrap');
+  if (!wrap) return;
+  const rows = filter ? cdrParsed.filter(r =>
+    JSON.stringify(r).toLowerCase().includes(filter.toLowerCase())
+  ) : cdrParsed;
+
+  const cols = ['#', 'A-Party', 'B-Party', 'DateTime', 'Type', 'Cell ID', 'LAC', 'Site', 'Lat', 'Lng', 'IMEI', 'Duration'];
+  wrap.innerHTML = `
+    <div style="display:grid;grid-template-columns:25px 95px 95px 110px 55px 80px 55px 100px 68px 68px 100px 55px;
+      padding:5px 9px;background:rgba(0,200,255,.07);font-family:'Orbitron';font-size:6px;
+      font-weight:700;color:var(--blue);letter-spacing:.5px;gap:3px;min-width:900px;">
+      ${cols.map(c=>`<div>${c}</div>`).join('')}
+    </div>
+    <div style="max-height:250px;overflow-y:auto;">
+    ${rows.slice(0,200).map((r,i) => `
+    <div style="display:grid;grid-template-columns:25px 95px 95px 110px 55px 80px 55px 100px 68px 68px 100px 55px;
+      padding:5px 9px;border-bottom:1px solid rgba(0,200,255,.03);font-family:'Share Tech Mono';
+      font-size:7.5px;gap:3px;min-width:900px;cursor:pointer;align-items:center;"
+      onclick="showCDRDetail(${i})"
+      style="background:${checkBPartyAlert(r.bparty)?'rgba(255,26,56,.06)':''}">
+      <div style="color:var(--dim);">${i+1}</div>
+      <div style="color:var(--cyan);">${r.aparty}</div>
+      <div style="color:${checkBPartyAlert(r.bparty)?'var(--red)':'var(--txt)'};">${r.bparty}</div>
+      <div style="color:var(--dim);font-size:7px;">${r.datetime}</div>
+      <div>${r.calltype}</div>
+      <div style="color:var(--yel);">${r.cellid}</div>
+      <div>${r.lac}</div>
+      <div style="font-size:7px;">${r.site||'—'}</div>
+      <div style="font-size:7px;color:var(--blue);">${r.lat}</div>
+      <div style="font-size:7px;color:var(--blue);">${r.lng}</div>
+      <div style="font-size:7px;color:var(--dim);">${r.imei||'—'}</div>
+      <div style="color:var(--dim);">${r.duration||'—'}</div>
+    </div>`).join('')}
+    </div>`;
+}
+
+function filterCDR(val) {
+  renderCDRTable(val);
+}
+
+function checkBPartyAlert(num) {
+  if (!num) return false;
+  return DB.targets.some(t => t.numbers && t.numbers.split(',').some(n => n.trim() === num.trim()));
+}
+
+function checkAssociateAlerts() {
+  const alertArea = document.getElementById('cdr-alerts-area');
+  if (!alertArea) return;
+  const alerts = [];
+  cdrParsed.forEach(r => {
+    DB.targets.forEach(t => {
+      const nums = (t.numbers || '').split(',').map(n => n.trim());
+      if (nums.includes(r.bparty?.trim()) || nums.includes(r.aparty?.trim())) {
+        alerts.push({ target: t.name, number: r.aparty || r.bparty, cell: r.cellid, site: r.site, time: r.datetime, lat: r.lat, lng: r.lng });
+      }
+    });
+  });
+  if (alerts.length > 0) {
+    alertArea.innerHTML = alerts.slice(0,3).map(a => `
+      <div class="alert-banner">
+        ⚠️ TARGET MATCH: <b>${a.target}</b> · ${a.number} · Cell: ${a.cell} · ${a.site} · ${a.time}
+        ${a.lat ? `· <a href="https://maps.google.com/?q=${a.lat},${a.lng}" target="_blank" style="color:var(--red);text-decoration:none;">🗺️ MAP</a>` : ''}
+      </div>`).join('');
+    document.getElementById('tab-cdr').classList.add('alert-tab');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// PINPOINT ENGINE — Suspect Location
+// ════════════════════════════════════════════════════════════════
+function runPinpoint() {
+  if (cdrParsed.length === 0) return;
+
+  // Cell frequency analysis
+  const cellFreq = {};
+  const cellCoords = {};
+  const cellSites = {};
+  const timeByCell = {};
+
+  cdrParsed.forEach(r => {
+    const cid = r.cellid;
+    if (!cid) return;
+    cellFreq[cid] = (cellFreq[cid] || 0) + 1;
+    if (r.lat && r.lng && r.lat !== '0' && r.lng !== '0') {
+      cellCoords[cid] = { lat: parseFloat(r.lat), lng: parseFloat(r.lng) };
+    }
+    if (r.site) cellSites[cid] = r.site;
+    if (r.datetime) {
+      const h = new Date(r.datetime).getHours();
+      if (!isNaN(h)) {
+        if (!timeByCell[cid]) timeByCell[cid] = { night:0, day:0 };
+        if (h >= 22 || h < 6) timeByCell[cid].night++;
+        else timeByCell[cid].day++;
+      }
+    }
+  });
+
+  // Sort cells by frequency
+  const ranked = Object.entries(cellFreq).sort((a,b) => b[1]-a[1]);
+  if (ranked.length === 0) return;
+
+  const homeCell = ranked[0][0];
+  const homeCoords = cellCoords[homeCell];
+  const homeSite = cellSites[homeCell] || 'Unknown';
+
+  // Work cell = most used daytime cell ≠ home
+  let workCell = ranked.length > 1 ? ranked[1][0] : homeCell;
+  for (const [cid] of ranked) {
+    if (cid !== homeCell && timeByCell[cid]?.day > (timeByCell[homeCell]?.day || 0)) {
+      workCell = cid; break;
+    }
+  }
+
+  // Peak activity time
+  const hourFreq = {};
+  cdrParsed.forEach(r => {
+    if (r.datetime) {
+      const h = new Date(r.datetime).getHours();
+      if (!isNaN(h)) hourFreq[h] = (hourFreq[h]||0)+1;
+    }
+  });
+  const peakHour = Object.entries(hourFreq).sort((a,b)=>b[1]-a[1])[0];
+
+  // Confidence: based on location data availability
+  const withLoc = cdrParsed.filter(r => r.lat && r.lng && r.lat!=='0').length;
+  const conf = Math.min(95, Math.round((withLoc / cdrParsed.length * 60) + (ranked[0][1] / cdrParsed.length * 35)));
+
+  // TA-based radius (if available, estimate ~76m per TA unit)
+  const radius = '~500m (cell radius)';
+
+  // Show pinpoint
+  const ppBox = document.getElementById('pinpoint-result');
+  ppBox.style.display = 'block';
+
+  document.getElementById('pp-home').textContent = homeCell + (homeSite ? ' · ' + homeSite.substring(0,20) : '');
+  document.getElementById('pp-work').textContent = cellSites[workCell] || workCell;
+  document.getElementById('pp-active').textContent = peakHour ? peakHour[0] + ':00 hrs (' + peakHour[1] + ' calls)' : '—';
+  document.getElementById('pp-radius').textContent = radius;
+  document.getElementById('conf-fill').style.width = conf + '%';
+  document.getElementById('conf-pct').textContent = conf + '% confidence';
+
+  if (homeCoords) {
+    document.getElementById('pp-coords').textContent = homeCoords.lat.toFixed(5) + '°N · ' + homeCoords.lng.toFixed(5) + '°E';
+    document.getElementById('pp-addr').textContent = homeSite;
+    document.getElementById('pp-map-link').href = `https://maps.google.com/?q=${homeCoords.lat},${homeCoords.lng}`;
+    window._pinLat = homeCoords.lat;
+    window._pinLng = homeCoords.lng;
+  } else {
+    document.getElementById('pp-coords').textContent = 'No GPS coordinates in CDR';
+    document.getElementById('pp-addr').textContent = 'Based on cell ID frequency: ' + homeCell;
+  }
+}
+
+function pinpointOnAppMap() {
+  if (!window._pinLat) return;
+  go('map', document.querySelector('[onclick*="map"]'));
+  setTimeout(() => {
+    if (!leafletMap) initMap();
+    leafletMap.setView([window._pinLat, window._pinLng], 16);
+    L.circleMarker([window._pinLat, window._pinLng], {
+      radius: 20, color: '#ff1a38', fillColor: '#ff1a38', fillOpacity: 0.3, weight: 3
+    }).addTo(leafletMap).bindPopup('<b style="color:#ff1a38">🎯 SUSPECT LOCATION</b><br>Based on CDR Analysis').openPopup();
+  }, 300);
+}
+
+// ════════════════════════════════════════════════════════════════
+// TARGET MANAGEMENT
+// ════════════════════════════════════════════════════════════════
+function showAddTarget() {
+  document.getElementById('tgt-name').value = '';
+  document.getElementById('tgt-nums').value = '';
+  document.getElementById('tgt-cnic').value = '';
+  document.getElementById('tgt-imei').value = '';
+  document.getElementById('tgt-notes').value = '';
+  document.getElementById('modal-target').classList.add('show');
+}
+function showAddAssociate() { showAddTarget(); document.getElementById('tgt-stat').value = 'associate'; }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function saveTarget() {
+  const name = document.getElementById('tgt-name').value.trim();
+  const nums = document.getElementById('tgt-nums').value.trim();
+  if (!name && !nums) return;
+  const networks = Array.from(document.getElementById('tgt-network').selectedOptions).map(o=>o.value);
+  const tgt = {
+    id: Date.now(),
+    name: name || 'Target-' + DB.targets.length,
+    numbers: nums,
+    cnic: document.getElementById('tgt-cnic').value.trim(),
+    imei: document.getElementById('tgt-imei').value.trim(),
+    networks,
+    status: document.getElementById('tgt-stat').value,
+    notes: document.getElementById('tgt-notes').value.trim(),
+    addedAt: new Date().toLocaleString(),
+    lastSeen: '—',
+    lastCell: '—',
+    lastSite: '—'
+  };
+  DB.targets.push(tgt);
+  closeModal('modal-target');
+  renderTargets();
+  updateTargetDropdown();
+  checkAssociateAlerts();
+}
+
+function deleteTarget(id) {
+  DB.targets = DB.targets.filter(t => t.id !== id);
+  renderTargets();
+  updateTargetDropdown();
+}
+
+function renderTargets() {
+  const list = document.getElementById('targets-list');
+  if (!list) return;
+  document.getElementById('tgt-cnt').textContent = DB.targets.filter(t => t.status !== 'associate').length;
+  document.getElementById('assoc-cnt').textContent = DB.targets.filter(t => t.status === 'associate').length;
+
+  if (DB.targets.length === 0) {
+    list.innerHTML = `<div class="card" style="text-align:center;opacity:.5;font-family:'Share Tech Mono';font-size:9px;">No targets added yet. Click ➕ ADD TARGET</div>`;
+    return;
+  }
+
+  const statusColors = { active: '#ff1a38', watch: '#ffc800', associate: '#7b22c2', cleared: '#28ff00' };
+
+  list.innerHTML = DB.targets.map(t => {
+    const c = statusColors[t.status] || '#00c8ff';
+    const netBadges = (t.networks || []).map(n => `<span style="font-family:'Orbitron';font-size:6.5px;padding:1px 5px;border:1px solid ${OPS[n]?OPS[n].color:'#fff'};border-radius:8px;color:${OPS[n]?OPS[n].color:'#fff'};">${n.toUpperCase()}</span>`).join(' ');
+    // Check CDR matches
+    const cdrMatches = cdrParsed.filter(r => {
+      const nums = (t.numbers||'').split(',').map(n=>n.trim());
+      return nums.includes(r.aparty?.trim()) || nums.includes(r.bparty?.trim());
+    });
+    return `
+    <div class="tgt-card" style="border-color:${c};">
+      <div class="tgt-status ${t.status}">${t.status.toUpperCase()}</div>
+      <div class="tgt-name" style="color:${c};">🎯 ${t.name}</div>
+      <div class="tgt-num">${t.numbers || '—'}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">${netBadges}</div>
+      ${t.cnic ? `<div style="font-family:'Share Tech Mono';font-size:8.5px;color:var(--dim);margin-top:4px;">CNIC: ${t.cnic}</div>` : ''}
+      ${t.imei ? `<div style="font-family:'Share Tech Mono';font-size:8.5px;color:var(--dim);">IMEI: ${t.imei}</div>` : ''}
+      ${t.notes ? `<div style="font-family:'Share Tech Mono';font-size:8.5px;color:var(--dim);margin-top:3px;">${t.notes}</div>` : ''}
+      ${cdrMatches.length > 0 ? `
+        <div style="margin-top:8px;padding:6px 9px;background:rgba(255,26,56,.08);border:1px solid rgba(255,26,56,.3);border-radius:7px;">
+          <div style="font-family:'Orbitron';font-size:7.5px;color:var(--red);letter-spacing:1px;">⚠️ ${cdrMatches.length} CDR MATCHES FOUND</div>
+          ${cdrMatches.slice(0,3).map(r=>`<div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);margin-top:2px;">
+            ${r.datetime} · ${r.cellid} · ${r.site||'—'} · ${r.lat&&r.lng?`<a href="https://maps.google.com/?q=${r.lat},${r.lng}" target="_blank" style="color:var(--red);text-decoration:none;">MAP</a>`:''}
+          </div>`).join('')}
+        </div>` : ''}
+      <div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-blue" style="padding:4px 10px;" onclick="traceTarget(${t.id})">🎯 TRACE</button>
+        <button class="btn btn-purple" style="padding:4px 10px;" onclick="dfTarget(${t.id})">🧭 DIRECTION FIND</button>
+        <button class="btn btn-red" style="padding:4px 10px;" onclick="deleteTarget(${t.id})">🗑️ DELETE</button>
+      </div>
+      <div style="font-family:'Share Tech Mono';font-size:7.5px;color:var(--dim);margin-top:5px;">Added: ${t.addedAt}</div>
+    </div>`;
+  }).join('');
+}
+
+function traceTarget(id) {
+  const t = DB.targets.find(x => x.id === id);
+  if (!t) return;
+  go('cdr', document.querySelector('[onclick*="cdr"]'));
+  setTimeout(() => {
+    document.getElementById('cdr-filter').value = t.numbers.split(',')[0].trim();
+    filterCDR(t.numbers.split(',')[0].trim());
+  }, 200);
+}
+
+function dfTarget(id) {
+  const t = DB.targets.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('df-target').value = id;
+  go('search', document.querySelector('[onclick*="search"]'));
+  startDF();
+}
+
+function updateTargetDropdown() {
+  const sel = document.getElementById('df-target');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- Select Target --</option>' +
+    DB.targets.map(t => `<option value="${t.id}">${t.name} · ${t.numbers}</option>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// DIRECTION FINDING
+// ════════════════════════════════════════════════════════════════
+function startDF() {
+  const tgtId = parseInt(document.getElementById('df-target').value);
+  const tgt = DB.targets.find(t => t.id === tgtId);
+  const res = document.getElementById('df-result');
+  if (!tgt) { if(res) res.innerHTML = '<div style="color:var(--dim);font-family:\'Share Tech Mono\';font-size:9px;">Select a target first</div>'; return; }
+
+  // Find CDR matches for last known location
+  const matches = cdrParsed.filter(r => {
+    const nums = (tgt.numbers||'').split(',').map(n=>n.trim());
+    return nums.includes(r.aparty?.trim()) || nums.includes(r.bparty?.trim());
+  });
+
+  const lastMatch = matches.length > 0 ? matches[matches.length-1] : null;
+  const hasLocation = lastMatch && lastMatch.lat && lastMatch.lng && lastMatch.lat !== '0';
+
+  let html = `
+    <div style="background:rgba(255,26,56,.08);border:1px solid rgba(255,26,56,.3);border-radius:9px;padding:12px;">
+      <div style="font-family:'Orbitron';font-size:9px;font-weight:700;color:var(--red);letter-spacing:2px;margin-bottom:8px;">
+        🎯 DIRECTION FINDING: ${tgt.name}
+      </div>`;
+
+  if (hasLocation) {
+    const tLat = parseFloat(lastMatch.lat);
+    const tLng = parseFloat(lastMatch.lng);
+    const dlat = tLat - myLat;
+    const dlng = tLng - myLng;
+    const distM = Math.round(Math.sqrt(dlat*dlat + dlng*dlng) * 111000);
+    const bearing = ((Math.atan2(dlng, dlat) * 180 / Math.PI) + 360) % 360;
+    const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    const dir = dirs[Math.round(bearing/22.5)%16];
+    html += `
+      <div class="or"><span class="ok">Last Seen</span><span class="ov gd">${lastMatch.datetime}</span></div>
+      <div class="or"><span class="ok">Cell ID</span><span class="ov" style="color:var(--yel);">${lastMatch.cellid}</span></div>
+      <div class="or"><span class="ok">Site</span><span class="ov">${lastMatch.site||'—'}</span></div>
+      <div class="or"><span class="ok">Coordinates</span><span class="ov gd">${tLat.toFixed(5)}°N · ${tLng.toFixed(5)}°E</span></div>
+      <div class="or"><span class="ok">Distance</span><span class="ov gd">${distM < 1000 ? distM+'m' : (distM/1000).toFixed(2)+'km'}</span></div>
+      <div class="or"><span class="ok">Direction</span><span class="ov" style="color:var(--yel);">→ ${bearing.toFixed(1)}° (${dir})</span></div>
+      <a href="https://maps.google.com/?q=${tLat},${tLng}" target="_blank"
+        class="btn btn-red" style="margin-top:9px;width:100%;justify-content:center;display:flex;text-decoration:none;">
+        🗺️ OPEN TARGET LOCATION
+      </a>`;
+  } else if (matches.length > 0) {
+    html += `
+      <div class="or"><span class="ok">Last Seen</span><span class="ov">${lastMatch?.datetime||'—'}</span></div>
+      <div class="or"><span class="ok">Cell ID</span><span class="ov" style="color:var(--yel);">${lastMatch?.cellid||'—'}</span></div>
+      <div class="or"><span class="ok">Site</span><span class="ov">${lastMatch?.site||'—'}</span></div>
+      <div style="color:var(--dim);font-family:'Share Tech Mono';font-size:8.5px;margin-top:8px;">
+        No GPS coordinates in CDR. Location based on cell site address.
+      </div>`;
+  } else {
+    html += `<div style="color:var(--dim);font-family:'Share Tech Mono';font-size:9px;">No CDR matches found for this target. Upload CDR files first.</div>`;
+  }
+
+  html += '</div>';
+  if(res) res.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════════
+// AI ENGINE
+// ════════════════════════════════════════════════════════════════
+const AI_PROMPTS = {
+  network: () => `You are a Pakistan telecom SIGINT expert. Analyze:
+Current cell: UFONE eNB:111315 Sec2 RSRP:-97dBm TA:2 (~76m) B3 1800+ LTE-A 15+5MHz Ali Town Rawalpindi.
+JAZZ eNB:111509 Sec7 RSRP:-107dBm B3 1800+ LTE 20MHz.
+WARID LAC:50607 RSRP:-101dBm B3 distant 18km W.
+ZONG LAC:52228 RSRP:-110dBm B8 900 distant 27km NE.
+TELENOR LAC:58806 RSRP:-109dBm B8 900 distant 21km N Islamabad.
+Provide: signal quality, handover risk, best network, interference analysis, coverage quality. Concise technical.`,
+
+  cdr_pattern: () => {
+    const freq = {};
+    cdrParsed.forEach(r => { if(r.cellid) freq[r.cellid]=(freq[r.cellid]||0)+1; });
+    const top = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    return `Pakistan CDR expert. Analyze ${cdrParsed.length} CDR records from ${cdrNetworkFormat}.
+Top cells: ${top.map(([c,n])=>`${c}(${n}x)`).join(', ')}.
+Unique numbers: ${new Set(cdrParsed.map(r=>r.aparty)).size}.
+Network: ${cdrNetworkFormat}.
+Sites: ${[...new Set(cdrParsed.map(r=>r.site).filter(Boolean))].slice(0,5).join(', ')}.
+Analyze: movement pattern, home/work locations, activity times, suspect behavior. Concise.`;
+  },
+
+  location: () => `Telecom location expert. Based on CDR:
+Most frequent cell: ${cdrParsed.length>0 ? Object.entries(cdrParsed.reduce((a,r)=>{if(r.cellid)a[r.cellid]=(a[r.cellid]||0)+1;return a},{})).sort((a,b)=>b[1]-a[1])[0]?.[0]||'unknown' : 'no data'}.
+${cdrParsed[0]?.site ? 'Primary site: ' + cdrParsed[0].site : ''}
+Estimate likely home and work locations. Describe geographic area. Suggest BTS sites to request for more precision. Concise.`,
+
+  movement: () => `Movement analyst. CDR shows ${cdrParsed.length} records.
+Cells used: ${[...new Set(cdrParsed.map(r=>r.cellid).filter(Boolean))].join(', ')}.
+Sites: ${[...new Set(cdrParsed.map(r=>r.site).filter(Boolean))].slice(0,8).join(', ')}.
+Analyze movement pattern, routine, anomalies, and predict likely current location. Technical, concise.`,
+
+  pinpoint: () => {
+    const freq = {};
+    cdrParsed.forEach(r => { if(r.cellid) freq[r.cellid]=(freq[r.cellid]||0)+1; });
+    const top = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const locs = cdrParsed.filter(r=>r.lat&&r.lng&&r.lat!=='0').slice(0,5);
+    return `You are a precision location intelligence analyst. Based on Pakistan CDR data:
+Top cells: ${top.map(([c,n])=>`${c}(${n}x)`).join(', ')}.
+Known coordinates: ${locs.map(r=>`${r.lat},${r.lng}(${r.site||'?'})`).join(' | ')}.
+Task: Pinpoint suspect's most likely location with maximum precision. Provide: exact lat/lng estimate, radius, confidence %, area description, recommended approach direction. Be very specific.`;
+  }
+};
+
+async function runAI(type) {
+  const out = document.getElementById('ai-live-panel');
+  if (!out) return;
+  out.textContent = '';
+  out.classList.add('ai-typing');
+  out.textContent = 'AI analyzing...';
+  const loading = document.getElementById('ai-loading');
+  if(loading) loading.style.display = 'block';
+  try {
+    const prompt = typeof AI_PROMPTS[type] === 'function' ? AI_PROMPTS[type]() : AI_PROMPTS[type];
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    const d = await r.json();
+    out.classList.remove('ai-typing');
+    if(loading) loading.style.display = 'none';
+    out.textContent = d.content?.map(b => b.text || '').join('') || 'No response';
+  } catch (e) {
+    out.classList.remove('ai-typing');
+    if(loading) loading.style.display = 'none';
+    out.textContent = getFallbackAI(type);
+  }
+}
+
+async function runAICDR() {
+  const panel = document.getElementById('ai-cdr-result');
+  const out = document.getElementById('ai-cdr-out');
+  if (!panel || !out) return;
+  panel.style.display = 'block';
+  out.textContent = 'AI analyzing CDR patterns...';
+  await runAI('cdr_pattern');
+  out.textContent = document.getElementById('ai-live-panel').textContent;
+}
+
+async function runAITargets() {
+  const panel = document.getElementById('ai-tgt-panel');
+  const out = document.getElementById('ai-tgt-out');
+  if (!panel || !out) return;
+  panel.style.display = 'block';
+  const tgtSummary = DB.targets.map(t => `${t.name}: ${t.numbers} (${t.networks?.join(',') || '?'})`).join('\n');
+  out.textContent = 'AI analyzing targets...';
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 800,
+        messages: [{ role: 'user', content: `Pakistan intelligence analyst. Targets:\n${tgtSummary}\nCDR records: ${cdrParsed.length}. Analyze connections between targets, recommend surveillance priorities. Concise.` }]
+      })
+    });
+    const d = await r.json();
+    out.textContent = d.content?.map(b => b.text||'').join('') || 'No response';
+  } catch(e) { out.textContent = 'AI Analysis: Based on loaded targets, cross-reference CDR data to find common cell towers and time overlaps between all listed numbers.'; }
+}
+
+function toggleAILive(tog) {
+  tog.classList.toggle('on');
+  aiLiveActive = tog.classList.contains('on');
+  if (aiLiveActive) {
+    aiLiveTimer = setInterval(() => runAI('network'), 30000);
+    runAI('network');
+  } else {
+    clearInterval(aiLiveTimer);
+  }
+}
+
+function getFallbackAI(type) {
+  const fb = {
+    network: `SIGNAL ANALYSIS — Ali Town Rawalpindi\n━━━━━━━━━━━━━━━━━━━━━━━━━\nUFONE SIM1: -97dBm MODERATE · TA:2 ~76m from tower\nJAZZ SIM2: -107dBm POOR · 20MHz single carrier\nWARID/ZONG/TEL: distant · not viable\n\nBEST FOR DATA: UFONE SIM1 (closest, LTE-A CA)`,
+    cdr_pattern: `CDR ANALYSIS\n━━━━━━━━━━━━━━━━━━━━━━━━━\nRecords: ${cdrParsed.length}\nTop cell = likely home/frequent location\nMovement pattern: analyze timestamps for routine\nBTS to request for precision location`,
+    location: `LOCATION ESTIMATE\n━━━━━━━━━━━━━━━━━━━━━━━━━\nBased on cell frequency analysis\nMost frequent cell = home/work area\nRequest BTS data from operator for TA values`,
+    movement: `MOVEMENT PATTERN\n━━━━━━━━━━━━━━━━━━━━━━━━━\nAnalyze cell sequence for route\nTime-based cells = work/home pattern\nCell overlaps = meeting points`,
+    pinpoint: `PINPOINT ANALYSIS\n━━━━━━━━━━━━━━━━━━━━━━━━━\nHighest confidence: most frequent cell\nRadius: ~500m from cell site\nRefine with TA values if available`
+  };
+  return fb[type] || 'Analysis complete';
+}
+
+// ════════════════════════════════════════════════════════════════
+// GLOBAL SEARCH
+// ════════════════════════════════════════════════════════════════
+function globalSearch(val) {
+  const res = document.getElementById('search-results');
+  if (!res || !val || val.length < 3) {
+    if (res) res.innerHTML = '';
+    return;
+  }
+  const results = [];
+
+  // Search towers
+  TOWERS.forEach(t => {
+    if (JSON.stringify(t).toLowerCase().includes(val.toLowerCase())) {
+      results.push({ type: 'tower', data: t });
+    }
+  });
+
+  // Search CDR
+  cdrParsed.forEach((r, i) => {
+    if (JSON.stringify(r).toLowerCase().includes(val.toLowerCase())) {
+      results.push({ type: 'cdr', data: r, idx: i });
+    }
+  });
+
+  // Search targets
+  DB.targets.forEach(t => {
+    if (JSON.stringify(t).toLowerCase().includes(val.toLowerCase())) {
+      results.push({ type: 'target', data: t });
+    }
+  });
+
+  if (results.length === 0) {
+    res.innerHTML = `<div style="font-family:'Share Tech Mono';font-size:9px;color:var(--dim);padding:8px;">No results for "${val}"</div>`;
+    return;
+  }
+
+  res.innerHTML = `<div style="font-family:'Share Tech Mono';font-size:8.5px;color:var(--dim);margin-bottom:7px;">${results.length} results:</div>` +
+    results.slice(0, 15).map(r => {
+      if (r.type === 'tower') {
+        const c = OPS[r.data.op] ? OPS[r.data.op].color : '#fff';
+        return `<div style="padding:7px 9px;background:rgba(0,200,255,.05);border:1px solid rgba(0,200,255,.15);border-radius:7px;margin-bottom:5px;">
+          <span style="color:${c};font-family:'Orbitron';font-size:7.5px;font-weight:700;">TOWER</span> &nbsp;
+          <span style="font-family:'Share Tech Mono';font-size:9px;">${r.data.cid} · ${r.data.site}</span>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">${r.data.type} · ${r.data.band} · ${rsrpClass(r.data.rsrp)===''?'':r.data.rsrp+' dBm'}</div>
+        </div>`;
+      } else if (r.type === 'cdr') {
+        return `<div style="padding:7px 9px;background:rgba(255,200,0,.04);border:1px solid rgba(255,200,0,.15);border-radius:7px;margin-bottom:5px;">
+          <span style="color:var(--yel);font-family:'Orbitron';font-size:7.5px;font-weight:700;">CDR</span> &nbsp;
+          <span style="font-family:'Share Tech Mono';font-size:9px;">${r.data.aparty} → ${r.data.bparty}</span>
+          <div style="font-family:'Share Tech Mono';font-size:8px;color:var(--dim);">${r.data.datetime} · ${r.data.cellid} · ${r.data.site||'—'}</div>
+        </div>`;
+      } else {
+        const c2 = r.data.status === 'active' ? '#ff1a38' : '#ffc800';
+        return `<div style="padding:7px 9px;background:rgba(255,26,56,.05);border:1px solid rgba(255,26,56,.2);border-radius:7px;margin-bottom:5px;">
+          <span style="color:${c2};font-family:'Orbitron';font-size:7.5px;font-weight:700;">TARGET</span> &nbsp;
+          <span style="font-family:'Share Tech Mono';font-size:9px;">${r.data.name} · ${r.data.numbers}</span>
+        </div>`;
+      }
+    }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// LOG MANAGEMENT
+// ════════════════════════════════════════════════════════════════
+function addLogEntry(entry) {
+  DB.liveLog.unshift({ ...entry, id: Date.now() });
+  if (DB.liveLog.length > 1000) DB.liveLog.pop();
+}
+
+function renderLog() {
+  const body = document.getElementById('log-body');
+  const cnt = document.getElementById('log-cnt');
+  if (!body) return;
+  if (cnt) cnt.textContent = DB.liveLog.length + liveLogArr.length;
+  const all = [...liveLogArr, ...DB.liveLog].slice(0, 200);
+  const cols = 'grid-template-columns:50px 55px 1fr 50px 50px 60px 65px 55px;';
+  body.innerHTML = all.map(e => {
+    const c = e.op === 'Ufone' ? 'var(--ufone)' : e.op === 'Jazz' ? 'var(--jazz)' : e.op === 'Warid' ? 'var(--warid)' : e.op === 'Zong' ? 'var(--zong)' : e.op === 'Telenor' ? 'var(--tel)' : 'var(--blue)';
+    return `<div class="lrow" style="grid:${cols}">
+      <div style="color:var(--dim);">${e.time}</div>
+      <div style="color:${c};font-size:7.5px;">${e.op}</div>
+      <div style="color:var(--yel);">${e.cid}</div>
+      <div style="color:var(--dim);">${e.lac}</div>
+      <div class="${rsrpClass(e.rsrp)}">${e.rsrp||'—'}</div>
+      <div style="color:var(--blue);font-size:7.5px;">${e.band}</div>
+      <div style="font-size:7px;color:var(--cyan);">${(e.site||'').substring(0,18)}</div>
+      <div style="font-size:7px;color:var(--dim);">${e.gps?e.gps.split(',').map(x=>parseFloat(x).toFixed(3)).join(','):''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// EXPORT FUNCTIONS
+// ════════════════════════════════════════════════════════════════
+function exportCDRExcel() {
+  if (!cdrParsed.length) return alert('No CDR data');
+  const ws = XLSX.utils.json_to_sheet(cdrParsed.map(r => ({
+    'A-Party': r.aparty, 'B-Party': r.bparty, 'DateTime': r.datetime,
+    'Call Type': r.calltype, 'Cell ID': r.cellid, 'LAC': r.lac,
+    'Sector': r.sector, 'IMEI': r.imei, 'IMSI': r.imsi,
+    'Site': r.site, 'Latitude': r.lat, 'Longitude': r.lng, 'Duration': r.duration
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'CDR');
+  XLSX.writeFile(wb, 'NEXUS_CDR_' + new Date().getTime() + '.xlsx');
+}
+
+function exportGeoFenceExcel() {
+  const ws = XLSX.utils.json_to_sheet(TOWERS.map(t => ({
+    'Operator': OPS[t.op]?.name || t.op,
+    'Cell ID': t.cid, 'eNB': t.enb, 'Sector': t.sector,
+    'LAC/TAC': t.lac, 'Band': t.band, 'Type': t.type,
+    'RSRP (dBm)': t.rsrp, 'Azimuth': t.az, 'Distance (m)': t.dist,
+    'Site Name': t.site, 'Latitude': t.lat, 'Longitude': t.lng,
+    'BW': t.bw, 'PCI': t.pci, 'EARFCN': t.earfcn, 'Serving': t.serving
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'GeoFence');
+  XLSX.writeFile(wb, 'NEXUS_GeoFence_' + new Date().getTime() + '.xlsx');
+}
+
+function exportLogExcel() {
+  const all = [...liveLogArr, ...DB.liveLog];
+  if (!all.length) return alert('No log data');
+  const ws = XLSX.utils.json_to_sheet(all);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Log');
+  XLSX.writeFile(wb, 'NEXUS_Log_' + new Date().getTime() + '.xlsx');
+}
+
+function exportCDRLogExcel() {
+  if (!liveLogArr.length) return alert('No live log data');
+  const ws = XLSX.utils.json_to_sheet(liveLogArr);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'LiveCDR');
+  XLSX.writeFile(wb, 'NEXUS_LiveCDR_' + new Date().getTime() + '.xlsx');
+}
+
+function exportGeoFenceLog() {
+  const data = JSON.stringify(TOWERS, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'NEXUS_GeoFence_' + Date.now() + '.json'; a.click();
+}
+
+function exportLogCSV() {
+  const all = [...liveLogArr, ...DB.liveLog];
+  if (!all.length) return;
+  const headers = Object.keys(all[0]).join(',');
+  const rows = all.map(r => Object.values(r).map(v => '"' + String(v||'').replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob([headers + '\n' + rows], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'NEXUS_Log_' + Date.now() + '.csv'; a.click();
+}
+
+function exportAllDB() {
+  const data = JSON.stringify(DB, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'NEXUS_DB_' + Date.now() + '.json'; a.click();
+}
+
+function clearLog() { liveLogArr = []; DB.liveLog = []; renderLog(); }
+function clearCDRLog() { liveLogArr = []; }
+function clearDB() { if (confirm('Clear all database?')) { DB.cdrRows = []; DB.cdrFiles = []; cdrParsed = []; updateDBStats(); } }
+
+// ════════════════════════════════════════════════════════════════
+// DB STATUS
+// ════════════════════════════════════════════════════════════════
+function updateDBStats() {
+  const el = document.getElementById('db-stats');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="db-row"><span class="db-key">CDR Files</span><span class="db-val">${DB.cdrFiles.length}</span></div>
+    <div class="db-row"><span class="db-key">CDR Records</span><span class="db-val">${DB.cdrRows.length}</span></div>
+    <div class="db-row"><span class="db-key">Targets</span><span class="db-val">${DB.targets.length}</span></div>
+    <div class="db-row"><span class="db-key">Live Logs</span><span class="db-val">${liveLogArr.length}</span></div>
+    <div class="db-row"><span class="db-key">Cell Measurements</span><span class="db-val">${measureCnt}</span></div>
+    <div class="db-row"><span class="db-key">Towers in DB</span><span class="db-val">${TOWERS.length}</span></div>
+    ${DB.cdrFiles.map(f=>`<div class="db-row"><span class="db-key">${f.name}</span><span class="db-val">${f.rows} rows · ${f.network}</span></div>`).join('')}`;
+
+  const mb = document.getElementById('memory-bank');
+  if (mb) mb.innerHTML = `
+    <div class="or"><span class="ok">Session Start</span><span class="ov">${new Date().toLocaleDateString()}</span></div>
+    <div class="or"><span class="ok">GPS Fixes</span><span class="ov gd">${measureCnt}</span></div>
+    <div class="or"><span class="ok">Operators Scanned</span><span class="ov">5 (Jazz·Warid·Ufone·Zong·Telenor)</span></div>
+    <div class="or"><span class="ok">App Position</span><span class="ov">${myLat}°N · ${myLng}°E</span></div>`;
+}
+
+function saveMemorySnapshot() {
+  DB.memoryBank[Date.now()] = {
+    position: {lat:myLat,lng:myLng},
+    towers: TOWERS.map(t=>({cid:t.cid,rsrp:t.rsrp,serving:t.serving})),
+    targets: DB.targets.length,
+    cdrs: DB.cdrRows.length,
+    time: new Date().toISOString()
+  };
+  updateDBStats();
+  alert('Memory snapshot saved!');
+}
+
+function loadMultiFile(input) {
+  Array.from(input.files).forEach(f => {
+    const li = document.getElementById('upload-list');
+    if (li) li.innerHTML += `<div style="font-family:'Share Tech Mono';font-size:9px;color:var(--cyan);padding:4px 0;border-bottom:1px solid rgba(0,200,255,.05);">📁 ${f.name} · ${(f.size/1024).toFixed(1)}KB</div>`;
+    // Load into CDR parser
+    const fakeInput = { files: [f] };
+    loadCDRFile(fakeInput);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// ANDROID BRIDGE
+// ════════════════════════════════════════════════════════════════
+window.onNexusData = function(cellData, simInfo, gpsData, netInfo) {
+  try {
+    if (gpsData?.hasGps && gpsData.lat) {
+      myLat = gpsData.lat; myLng = gpsData.lng;
+      const el = document.getElementById('gps-coord');
+      if (el) el.textContent = gpsData.lat.toFixed(5) + '°N · ' + gpsData.lng.toFixed(5) + '°E';
+      const df = document.getElementById('df-mypos');
+      if (df) df.textContent = gpsData.lat.toFixed(5) + '°N · ' + gpsData.lng.toFixed(5) + '°E';
+    }
+    if (cellData?.sim1Cells?.[0]) {
+      const c = cellData.sim1Cells[0];
+      if (c.rsrp) {
+        SIM_CONFIGS[0].rsrp = c.rsrp;
+        const el = document.getElementById('gv-sim1');
+        if (el) { el.textContent = c.rsrp; el.className = 'gv ' + rsrpClass(c.rsrp); }
+      }
+    }
+  } catch(e) { console.log('bridge:', e.message); }
+};
+
+// ════════════════════════════════════════════════════════════════
+// DRAG & DROP
+// ════════════════════════════════════════════════════════════════
+const dz = document.getElementById('dz');
+if (dz) {
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag');
+    const files = e.dataTransfer.files;
+    if (files.length) loadCDRFile({ files });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// STARTUP
+// ════════════════════════════════════════════════════════════════
+setTimeout(() => {
+  buildGauges();
+  buildSigGrid();
+  buildAzTbl();
+  buildGeoTable();
+  updateDBStats();
+
+  // Seed some log entries
+  const ops = ['Ufone','Jazz','Warid','Zong','Telenor'];
+  const sites = ['Adyala Link Rd','Ali Town','Rwp West','ICHS Punjab','H-13 Isb'];
+  const cids = ['111315:2','111509:7','50607:32','52228:41','58806:24'];
+  const lacs = [18810, 60604, 50607, 52228, 58806];
+  const bands = ['B3·1800','B3·1800+','B3·1800','B8·900','B8·900'];
+  const rsrps = [-97,-107,-101,-110,-109];
+  const now = new Date();
+  for (let i = 14; i >= 0; i--) {
+    const d = new Date(now - i * 60000);
+    const idx = i % 5;
+    addLogEntry({
+      time: d.toLocaleTimeString(), date: d.toLocaleDateString(),
+      op: ops[idx], enb: cids[idx].split(':')[0], cid: cids[idx],
+      lac: lacs[idx], rsrp: rsrps[idx] + Math.round(Math.random()*6-3),
+      band: bands[idx], site: sites[idx], gps: myLat+','+myLng,
+      sector: (idx+1), az: [120,340,280,50,10][idx], type: ['4G LTE-A','4G LTE','4G LTE','2G GSM','2G GSM'][idx]
+    });
+  }
+
+  // Auto request Android data
+  if (typeof NexusAndroid !== 'undefined') {
+    try {
+      const cell = JSON.parse(NexusAndroid.getCellData());
+      const sim = JSON.parse(NexusAndroid.getSimInfo());
+      const gps = JSON.parse(NexusAndroid.getGpsData());
+      const net = JSON.parse(NexusAndroid.getNetworkType());
+      window.onNexusData(cell, sim, gps, net);
+    } catch(e) { console.log('Android bridge init:', e.message); }
+  }
+}, 2800);
+</script>
+</body></html>
